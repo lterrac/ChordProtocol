@@ -1,25 +1,78 @@
 package model;
 
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+
+import static utilities.HashText.sha1;
 
 public class Node {
 
+    /**
+     * Contains information about the node
+     */
+    private NodeProperties properties;
 
-    private NodeProperties nodeProperties;
+    /**
+     * Data contained in the node
+     */
     private HashMap<Integer, Serializable> data = new HashMap<>();
 
-    private NodeProperties successor;
-    private NodeProperties predecessor;
-    private NodeProperties[] fingers;
+    /**
+     * List of adjacent successors of the node
+     */
+    private List<NodeProperties> successors = new ArrayList<>();
 
+
+    private NodeProperties predecessor;
+
+    /**
+     * Finger table of the node
+     */
+    private final NodeProperties[] fingers = new NodeProperties[NodeProperties.KEY_SIZE];
 
 
     /**
      * Create a new Chord Ring
      */
-    public void create() {
+    public Node() {
 
+        //TODO Decide what port use
+        int port = 0;
+
+        //Find Ip address, it will be published later for joining
+        InetAddress ipAddress= null;
+        try {
+            ipAddress = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        if (ipAddress != null) {
+            System.out.println("IP of this node is := "+ipAddress.getHostAddress());
+        } else {
+            System.err.println("There is no ip address!");
+            return;
+        }
+
+        //Create node information
+        this.properties = new NodeProperties(sha1(ipAddress.getHostAddress()), ipAddress.getHostAddress(), port);
+
+        this.successor(this.properties);
+        this.predecessor = null;
+    }
+
+    /**
+     * Set the successor of the current node
+     * @param node the successor
+     */
+    private void successor(NodeProperties node) {
+        synchronized (this.fingers) {
+            this.fingers[0] = node;
+        }
     }
 
     /**
@@ -27,6 +80,35 @@ public class Node {
      * @param knownNode used to join the ring
      */
     public void join(Node knownNode) {
+
+        //TODO Decide what port use
+        int port = 0;
+
+        //Find Ip address, it will be published later for joining
+        InetAddress ipAddress= null;
+        try {
+            ipAddress = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        if (ipAddress != null) {
+            System.out.println("IP of this node is := "+ipAddress.getHostAddress());
+        } else {
+            System.err.println("There is no ip address!");
+            return;
+        }
+
+        //Create node information
+        this.properties = new NodeProperties(sha1(ipAddress.getHostAddress()), ipAddress.getHostAddress(), port);
+
+        NodeProperties successor = null;
+        /* TODO Decide if methods will be sync or async.
+           sync: put the class in wait until a variable (successor) is set
+           async: split the method in the paper in two methods
+        */
+        this.successor(successor);
+        this.predecessor = null;
 
     }
 
