@@ -1,4 +1,4 @@
-package model;
+package main.java.model;
 
 public class NodeProperties {
 
@@ -15,10 +15,24 @@ public class NodeProperties {
     }
 
     public String getIpAddress() {
+
         return ipAddress;
     }
 
     public int getPort() {
+
         return port;
+    }
+
+    public String getNodeId() {
+        return nodeId;
+    }
+
+    public void setIpAddress(String ipAddress) {
+        this.ipAddress = ipAddress;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
     }
 }

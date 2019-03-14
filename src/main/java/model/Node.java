@@ -1,4 +1,4 @@
-package model;
+package main.java.model;
 
 import java.io.Serializable;
 import java.net.InetAddress;
@@ -15,6 +15,16 @@ public class Node {
      * Contains information about the node
      */
     private NodeProperties properties;
+
+    private boolean freePort;
+
+    public boolean isFreePort() {
+        return freePort;
+    }
+
+    public void setFreePort(boolean freePort) {
+        this.freePort = freePort;
+    }
 
     /**
      * Data contained in the node
@@ -38,31 +48,32 @@ public class Node {
     /**
      * Create a new Chord Ring
      */
-    public Node() {
+    public Node(int port) {
 
-        //TODO Decide what port use
-        int port = 0;
+        freePort=true;
 
         //Find Ip address, it will be published later for joining
-        InetAddress ipAddress= null;
+        InetAddress inetAddress= null;
         try {
-            ipAddress = InetAddress.getLocalHost();
+            inetAddress = InetAddress.getLocalHost();
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
 
-        if (ipAddress != null) {
-            System.out.println("IP of this node is := "+ipAddress.getHostAddress());
+        if (inetAddress != null) {
+            String ipAddress=inetAddress.getHostAddress();
+            System.out.println("IP of this node is := "+ipAddress);
+
+            //Create node information
+            this.properties = new NodeProperties(sha1(ipAddress), ipAddress, port);
+            new Thread(new HandleRequest(this)).start();
+            this.successor(this.properties);
+            this.predecessor = null;
         } else {
             System.err.println("There is no ip address!");
             return;
         }
 
-        //Create node information
-        this.properties = new NodeProperties(sha1(ipAddress.getHostAddress()), ipAddress.getHostAddress(), port);
-
-        this.successor(this.properties);
-        this.predecessor = null;
     }
 
     /**
@@ -77,12 +88,11 @@ public class Node {
 
     /**
      * Join a Ring containing the know Node
-     * @param knownNode used to join the ring
      */
-    public void join(Node knownNode) {
-
+    public Node(int port, String ipAddress) {
+        /*
         //TODO Decide what port use
-        int port = 0;
+        //int port = 0;
 
         //Find Ip address, it will be published later for joining
         InetAddress ipAddress= null;
@@ -103,12 +113,13 @@ public class Node {
         this.properties = new NodeProperties(sha1(ipAddress.getHostAddress()), ipAddress.getHostAddress(), port);
 
         NodeProperties successor = null;
-        /* TODO Decide if methods will be sync or async.
+         TODO Decide if methods will be sync or async.
            sync: put the class in wait until a variable (successor) is set
            async: split the method in the paper in two methods
-        */
+
         this.successor(successor);
         this.predecessor = null;
+        */
 
     }
 
@@ -160,5 +171,7 @@ public class Node {
 
     }
 
-
+    public NodeProperties getProperties() {
+        return properties;
+    }
 }
