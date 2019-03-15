@@ -1,30 +1,31 @@
 package main.java.model;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static utilities.HashText.sha1;
 
 public class Node {
 
+    private static final Logger logger = Logger.getLogger(Node.class.getName());
+
+    /**
+     * Finger table of the node
+     */
+    private final NodeProperties[] fingers = new NodeProperties[NodeProperties.KEY_SIZE];
+
     /**
      * Contains information about the node
      */
     private NodeProperties properties;
-
-    private boolean freePort;
-
-    public boolean isFreePort() {
-        return freePort;
-    }
-
-    public void setFreePort(boolean freePort) {
-        this.freePort = freePort;
-    }
 
     /**
      * Data contained in the node
@@ -36,60 +37,44 @@ public class Node {
      */
     private List<NodeProperties> successors = new ArrayList<>();
 
-
     private NodeProperties predecessor;
 
-    /**
-     * Finger table of the node
-     */
-    private final NodeProperties[] fingers = new NodeProperties[NodeProperties.KEY_SIZE];
-
+    private ServerSocket serverSocket;
 
     /**
      * Create a new Chord Ring
      */
-    public Node(int port) {
-
-        freePort=true;
+    public Node() {
+        serverSocket = createServerSocket();
 
         //Find Ip address, it will be published later for joining
-        InetAddress inetAddress= null;
+        InetAddress currentIp = null;
         try {
-            inetAddress = InetAddress.getLocalHost();
+            currentIp = InetAddress.getLocalHost();
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
 
-        if (inetAddress != null) {
-            String ipAddress=inetAddress.getHostAddress();
-            System.out.println("IP of this node is := "+ipAddress);
+        assert currentIp != null;
+        String ipAddress = currentIp.getHostAddress();
 
-            //Create node information
-            this.properties = new NodeProperties(sha1(ipAddress), ipAddress, port);
-            new Thread(new HandleRequest(this)).start();
-            this.successor(this.properties);
-            this.predecessor = null;
-        } else {
-            System.err.println("There is no ip address!");
-            return;
-        }
+        logger.log(Level.INFO, "IP of this node is := " + ipAddress);
 
+        //Create node information
+        this.properties = new NodeProperties(sha1(ipAddress), ipAddress, serverSocket.getLocalPort());
+        this.successor(this.properties);
+        this.predecessor = null;
+
+        new Thread(new HandleRequest(this)).start();
     }
 
     /**
-     * Set the successor of the current node
-     * @param node the successor
+     * Join a Ring containing the known Node
      */
-    private void successor(NodeProperties node) {
-        synchronized (this.fingers) {
-            this.fingers[0] = node;
-        }
-    }
+    public Node(String ipAddress, int port) {
 
-    /**
-     * Join a Ring containing the know Node
-     */
-    public Node(int port, String ipAddress) {
+
+
         /*
         //TODO Decide what port use
         //int port = 0;
@@ -123,16 +108,27 @@ public class Node {
 
     }
 
-    //TODO: Will go into a thread
     /**
-     *  Veriﬁes n’s immediate successor, and tells the successor about n.
+     * Set the successor of the current node
+     *
+     * @param node the successor
+     */
+    private void successor(NodeProperties node) {
+        synchronized (this.fingers) {
+            this.fingers[0] = node;
+        }
+    }
+
+    //TODO: Will go into a thread
+
+    /**
+     * Veriﬁes n’s immediate successor, and tells the successor about n.
      */
     public void stabilize() {
 
     }
 
     /**
-     *
      * @param predecessor node that could be the predecessor
      */
     public void notifySuccessor(Node predecessor) {
@@ -140,6 +136,7 @@ public class Node {
     }
 
     //TODO: Will go into a thread
+
     /**
      * Refresh fingers table
      */
@@ -148,6 +145,7 @@ public class Node {
     }
 
     //TODO: Will go into a thread
+
     /**
      * Check if predecessor has failed
      */
@@ -157,6 +155,7 @@ public class Node {
 
     /**
      * Find the successor of the node with the given id
+     *
      * @param nodeId
      */
     public void findSuccessor(int nodeId) {
@@ -165,6 +164,7 @@ public class Node {
 
     /**
      * Find the highest predecessor of id
+     *
      * @param nodeId
      */
     public void closestPrecedingNode(int nodeId) {
@@ -173,5 +173,22 @@ public class Node {
 
     public NodeProperties getProperties() {
         return properties;
+    }
+
+    private ServerSocket createServerSocket() {
+        ServerSocket serverSocket = null;
+
+        // Create the new serverSocket
+        try {
+            serverSocket = new ServerSocket(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return serverSocket;
+    }
+
+    public ServerSocket getServerSocket() {
+        return serverSocket;
     }
 }

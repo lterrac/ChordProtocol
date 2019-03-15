@@ -4,36 +4,56 @@ import java.util.Scanner;
 
 public class App {
 
-
-    public static void main(String[] args) throws InterruptedException {
-        //Fingers fingerTable;
+    public static void main(String[] args) {
 
         Node host;
 
         Scanner in = new Scanner(System.in);
 
+        System.out.println("Enter \"new\" if you are the Net Generator, otherwise enter IP and port (\"IP\":\"port\") of the Node you know.");
 
-        System.out.println("Enter -1 if you are the Net Generator, otherwise enter the port number of the Node you know.");
-        int inputPort = in.nextInt();
-        if(inputPort == -1) {
+        String input = in.nextLine();
+        if (input.equals("new")) {
+            host = new Node();
+        } else {
+            String[] parts = input.split(":");
+            String knownIp = parts[0];
+            int knownPort = Integer.parseInt(parts[1]);
 
-            do{
+            System.out.println(knownIp);
+            System.out.println(knownPort);
 
-                System.out.println("Enter the port number you want to use.");
-                int port = in.nextInt();
-                System.out.println(port);
-                host = new Node(port);
-                Thread.sleep(400);//TODO: check correctness
-            }while(!host.isFreePort());
-
+            //host = new Node(knownIp, knownPort);
         }
-        else{
-            System.out.println("Enter the ip Address of the Node you know.");
-            String newLine=in.nextLine();
-            String inputIp=in.nextLine();
-            System.out.println(inputIp);
-            host = new Node(inputPort,inputIp);
 
-        }
+        // Workflow for demo
+        int action;
+        do {
+            displayChoices();
+            action = in.nextInt();
+            switch (action) {
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 0: System.out.println("The node has left the network!");
+                        System.exit(0);
+                        break;
+                default: System.out.println("Invalid choice! Try again...");
+            }
+        } while (action != 0);
+
+        System.out.println("Bye.");
+    }
+
+    private static void displayChoices() {
+        System.out.println("Select your choice:");
+        System.out.println("1. Own IP address and ID");
+        System.out.println("2. The IP address and ID of the successor and predecessor;");
+        System.out.println("3. The file key IDs contained by the current node;");
+        System.out.println("4. Own finger table");
+        System.out.println("5. Lookup for a resource;");
+        System.out.println("0. Leave the network");
     }
 }
