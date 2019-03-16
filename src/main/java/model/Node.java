@@ -78,7 +78,7 @@ public class Node {
         this.successor(this.properties);
         this.predecessor = null;
 
-        new Thread(new RequestHandler(this)).start();
+        new Thread(new NodeSocketServer(this)).start();
     }
 
     /**
