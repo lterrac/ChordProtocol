@@ -1,4 +1,4 @@
-package main.java.model;
+package model;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -6,8 +6,8 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.util.logging.Logger;
 
-import static main.java.utilities.Utilities.BUFFER_SIZE;
-import static main.java.utilities.Utilities.sha1;
+import static utilities.Utilities.BUFFER_SIZE;
+import static utilities.Utilities.sha1;
 
 public class Forwarder {
     private static final Logger logger = Logger.getLogger(Forwarder.class.getName());

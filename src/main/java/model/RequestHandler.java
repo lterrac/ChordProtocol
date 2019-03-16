@@ -1,4 +1,4 @@
-package main.java.model;
+package model;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -7,7 +7,7 @@ import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static main.java.utilities.Utilities.BUFFER_SIZE;
+import static utilities.Utilities.BUFFER_SIZE;
 
 public class RequestHandler implements Runnable {
 
@@ -23,14 +23,10 @@ public class RequestHandler implements Runnable {
 
         while (true) {
             try {
-                Socket client = null;
-                InputStream in = null;
-                OutputStream out = null;
-
                 // Accept a request from a client
-                client = node.getServerSocket().accept();
-                out = client.getOutputStream();
-                in = client.getInputStream();
+                Socket client = node.getServerSocket().accept();
+                InputStream in = client.getInputStream();
+                OutputStream out = client.getOutputStream();
 
                 byte[] buffer = new byte[BUFFER_SIZE];
                 in.read(buffer);

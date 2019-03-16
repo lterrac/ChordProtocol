@@ -1,11 +1,11 @@
-package main.java.utilities;
+package utilities;
 
 import javax.xml.bind.DatatypeConverter;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import static main.java.model.NodeProperties.KEY_SIZE;
+import static model.NodeProperties.KEY_SIZE;
 
 public class Utilities {
 

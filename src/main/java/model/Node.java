@@ -1,4 +1,4 @@
-package main.java.model;
+package model;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -10,8 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
 
-import static main.java.model.NodeProperties.KEY_SIZE;
-import static main.java.utilities.Utilities.sha1;
+import static model.NodeProperties.KEY_SIZE;
+import static utilities.Utilities.sha1;
 
 public class Node {
 

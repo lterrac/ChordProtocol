@@ -1,9 +1,9 @@
-package main.java.model;
+package model;
 
 import java.util.Scanner;
 
-import static main.java.model.NodeProperties.KEY_SIZE;
-import static main.java.utilities.Utilities.sha1;
+import static model.NodeProperties.KEY_SIZE;
+import static utilities.Utilities.sha1;
 
 public class App {
 
