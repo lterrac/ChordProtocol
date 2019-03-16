@@ -2,11 +2,14 @@ package main.java.model;
 
 import java.util.Scanner;
 
+import static main.java.model.NodeProperties.KEY_SIZE;
+import static main.java.utilities.Utilities.sha1;
+
 public class App {
 
     public static void main(String[] args) {
 
-        Node host;
+        Node node;
 
         Scanner in = new Scanner(System.in);
 
@@ -14,7 +17,8 @@ public class App {
 
         String input = in.nextLine();
         if (input.equals("new")) {
-            host = new Node();
+            node = new Node();
+            node.create();
         } else {
             String[] parts = input.split(":");
             String knownIp = parts[0];
@@ -23,11 +27,13 @@ public class App {
             System.out.println(knownIp);
             System.out.println(knownPort);
 
-            //host = new Node(knownIp, knownPort);
+            node = new Node();
+            node.join(knownIp, knownPort);
         }
 
         // Workflow for demo
         int action;
+
         do {
             displayChoices();
             action = in.nextInt();
@@ -36,15 +42,37 @@ public class App {
                 case 2:
                 case 3:
                 case 4:
-                case 5:
-                case 0: System.out.println("The node has left the network!");
-                        System.exit(0);
-                        break;
-                default: System.out.println("Invalid choice! Try again...");
+                case 5: // Look for a key
+                    System.out.println("Insert the key you are looking for (it must be in the range [0," + KEY_SIZE + "]):");
+                    int key = in.nextInt();
+                    int nodeId = node.lookup(key);
+                    if (nodeId != -1) {
+                        System.out.println("The resource is kept by node " + nodeId + ".");
+                    } else {
+                        System.out.println("The resource doesn't exist in the net.");
+                    }
+                    break;
+                case 6: // Ping request
+                    // Burn the newline character
+                    in.nextLine();
+
+                    System.out.println("Insert ip and port (\"IP\":\"port\") of the node you want to reach:");
+                    String address = in.nextLine();
+                    String[] parts = address.split(":");
+                    String ip = parts[0];
+                    int port = Integer.parseInt(parts[1]);
+                    String response = node.getForwarder().makeRequest(ip, port, "ping");
+                    System.out.println("Response from node " + sha1(ip + ":" + port) + ": " + response);
+                    break;
+                case 0: // Leave the network
+                    System.out.println("The node has left the network!");
+                    // TODO: without this the process is kept alive
+                    System.exit(0);
+                    break;
+                default:
+                    System.out.println("Invalid choice! Try again...");
             }
         } while (action != 0);
-
-        System.out.println("Bye.");
     }
 
     private static void displayChoices() {
@@ -54,6 +82,7 @@ public class App {
         System.out.println("3. The file key IDs contained by the current node;");
         System.out.println("4. Own finger table");
         System.out.println("5. Lookup for a resource;");
+        System.out.println("6. Ping a node;");
         System.out.println("0. Leave the network");
     }
 }

@@ -8,20 +8,22 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static utilities.HashText.sha1;
+import static main.java.model.NodeProperties.KEY_SIZE;
+import static main.java.utilities.Utilities.sha1;
 
 public class Node {
 
     private static final Logger logger = Logger.getLogger(Node.class.getName());
-
     /**
      * Finger table of the node
      */
-    private final NodeProperties[] fingers = new NodeProperties[NodeProperties.KEY_SIZE];
-
+    private final NodeProperties[] fingers = new NodeProperties[KEY_SIZE];
+    /**
+     * Represents the "client side" of a node. It sends requests to other nodes
+     */
+    private Forwarder forwarder;
     /**
      * Contains information about the node
      */
@@ -30,81 +32,73 @@ public class Node {
     /**
      * Data contained in the node
      */
-    private HashMap<Integer, Serializable> data = new HashMap<>();
+    private HashMap<Integer, Serializable> data;
 
     /**
      * List of adjacent successors of the node
      */
-    private List<NodeProperties> successors = new ArrayList<>();
+    private List<NodeProperties> successors;
 
     private NodeProperties predecessor;
 
     private ServerSocket serverSocket;
 
+    public Node() {
+        successors = new ArrayList<>();
+        data = new HashMap<>();
+    }
+
+    // Getter
+    public NodeProperties getProperties() {
+        return properties;
+    }
+
+    public ServerSocket getServerSocket() {
+        return serverSocket;
+    }
+
+    public Forwarder getForwarder() {
+        return forwarder;
+    }
+
     /**
      * Create a new Chord Ring
      */
-    public Node() {
+    public void create() {
         serverSocket = createServerSocket();
+        forwarder = new Forwarder();
+        int newPort = serverSocket.getLocalPort();
+        String ipAddress = getCurrentIp();
 
-        //Find Ip address, it will be published later for joining
-        InetAddress currentIp = null;
-        try {
-            currentIp = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
-        assert currentIp != null;
-        String ipAddress = currentIp.getHostAddress();
-
-        logger.log(Level.INFO, "IP of this node is := " + ipAddress);
+        System.out.println("The IP of this node is : " + ipAddress);
+        System.out.println("The server is active on port " + newPort);
 
         //Create node information
-        this.properties = new NodeProperties(sha1(ipAddress), ipAddress, serverSocket.getLocalPort());
+        this.properties = new NodeProperties(sha1(ipAddress + ":" + newPort), ipAddress, newPort);
         this.successor(this.properties);
         this.predecessor = null;
 
-        new Thread(new HandleRequest(this)).start();
+        new Thread(new RequestHandler(this)).start();
     }
 
     /**
      * Join a Ring containing the known Node
      */
-    public Node(String ipAddress, int port) {
+    public void join(String ip, int port) {
 
+        serverSocket = createServerSocket();
+        forwarder = new Forwarder();
+        int newPort = serverSocket.getLocalPort();
+        String newIp = getCurrentIp();
 
-
-        /*
-        //TODO Decide what port use
-        //int port = 0;
-
-        //Find Ip address, it will be published later for joining
-        InetAddress ipAddress= null;
-        try {
-            ipAddress = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-
-        if (ipAddress != null) {
-            System.out.println("IP of this node is := "+ipAddress.getHostAddress());
-        } else {
-            System.err.println("There is no ip address!");
-            return;
-        }
-
-        //Create node information
-        this.properties = new NodeProperties(sha1(ipAddress.getHostAddress()), ipAddress.getHostAddress(), port);
-
-        NodeProperties successor = null;
-         TODO Decide if methods will be sync or async.
-           sync: put the class in wait until a variable (successor) is set
-           async: split the method in the paper in two methods
-
-        this.successor(successor);
+        this.properties = new NodeProperties(sha1(newIp + ":" + newPort), newIp, newPort);
         this.predecessor = null;
-        */
+
+        forwarder.makeRequest(ip, port, "ping");
+        //this.successors.remove(0);
+        //this.successors.add(0, findSuccessor(properties.getNodeId()));
+
+        //NodeProperties successor = forwarder.makeRequest(ip, port, "find_successor:" + properties.getNodeId());
 
     }
 
@@ -171,10 +165,6 @@ public class Node {
 
     }
 
-    public NodeProperties getProperties() {
-        return properties;
-    }
-
     private ServerSocket createServerSocket() {
         ServerSocket serverSocket = null;
 
@@ -188,7 +178,22 @@ public class Node {
         return serverSocket;
     }
 
-    public ServerSocket getServerSocket() {
-        return serverSocket;
+    private String getCurrentIp() {
+        //Find Ip address, it will be published later for joining
+        InetAddress currentIp = null;
+        try {
+            currentIp = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        assert currentIp != null;
+        return currentIp.getHostAddress();
+    }
+
+    public int lookup(int key) {
+        // TODO: implement. If the key is not present return -1
+        //
+        return -1;
     }
 }

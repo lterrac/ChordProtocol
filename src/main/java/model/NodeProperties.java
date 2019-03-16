@@ -2,13 +2,13 @@ package main.java.model;
 
 public class NodeProperties {
 
-    //TODO It would be better having nodeId as a number (but 160 bit)
-    private final String nodeId;
-    public static final int KEY_SIZE = 160;
+    public static final int KEY_SIZE = 4;
+
+    private final int nodeId;
     private String ipAddress;
     private int port;
 
-    public NodeProperties(String nodeId, String ipAddress, int port) {
+    public NodeProperties(int nodeId, String ipAddress, int port) {
         this.nodeId = nodeId;
         this.ipAddress = ipAddress;
         this.port = port;
@@ -24,7 +24,7 @@ public class NodeProperties {
         return port;
     }
 
-    public String getNodeId() {
+    public int getNodeId() {
         return nodeId;
     }
 
