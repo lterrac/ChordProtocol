@@ -1,18 +1,39 @@
 package model;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.logging.Logger;
-
-import static utilities.Utilities.BUFFER_SIZE;
-import static utilities.Utilities.sha1;
 
 public class Forwarder {
     private static final Logger logger = Logger.getLogger(Forwarder.class.getName());
 
-    public String makeRequest(String ip, int port, String message) {
+    public void makeRequest(NodeProperties properties, String ip, int port, String message) {
+
+        Socket clientSocket;
+        ObjectOutputStream out;
+
+        /*
+            Note: Input Stream is useless, the response is redirected to
+            the RequestHandler
+         */
+
+
+        try {
+            clientSocket = new Socket(ip, port);
+            out = new ObjectOutputStream(clientSocket.getOutputStream());
+            out.writeObject(properties);
+            out.writeObject(message);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+}
+
+/*
+public String makeRequest(String ip, int port, String message) {
         Socket clientSocket = null;
         InputStream in = null;
         OutputStream out = null;
@@ -46,16 +67,17 @@ public class Forwarder {
                     f.createNewFile();
                 }
             }
-            */
+
 
             in.close();
-            out.close();
-            clientSocket.close();
-            return response;
+                    out.close();
+                    clientSocket.close();
+                    return response;
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return "An error occurred!";
-    }
-}
+                    } catch (IOException e) {
+                    e.printStackTrace();
+                    }
+                    return "An error occurred!";
+                    }
+
+ */

@@ -35,4 +35,8 @@ public class NodeProperties {
     public void setPort(int port) {
         this.port = port;
     }
+
+    public boolean isInInterval(int min, int max) {
+        return nodeId > min && nodeId <= max;
+    }
 }

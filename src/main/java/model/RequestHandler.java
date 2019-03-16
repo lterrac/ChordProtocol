@@ -46,6 +46,7 @@ public class RequestHandler implements Runnable {
               example : RequestObj request = ((RequestObj) in.readObject()).handle(node);
             */
 
+            NodeProperties nodeProperties = ((NodeProperties) in.readObject());
             String request = ((String) in.readObject());
 
             switch (request) {
@@ -55,7 +56,13 @@ public class RequestHandler implements Runnable {
                     out.close();
                 }
                 break;
-                case "find_successor":
+                case "find_successor": {
+                    node.findSuccessor(nodeProperties);
+                }
+                break;
+                case "found_successor": {
+                    node.successor(nodeProperties);
+                }
                 case "successor":
                 case "predecessor":
                 case "update":

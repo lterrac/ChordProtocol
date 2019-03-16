@@ -94,7 +94,17 @@ public class Node {
         this.properties = new NodeProperties(sha1(newIp + ":" + newPort), newIp, newPort);
         this.predecessor = null;
 
+        /*
+        Debug line: try the connection with a ping message
+
         forwarder.makeRequest(ip, port, "ping");
+
+         */
+
+        //TODO Put into a thread otherwise it won't be possible to handle other requests until the response is received!
+        forwarder.makeRequest(properties, ip,port,"find_successor");
+
+        //TODO What is this PAAAAAAAAAAAAAAAOOOOOOOOOOLOOOOOOOOOOOOOO
         //this.successors.remove(0);
         //this.successors.add(0, findSuccessor(properties.getNodeId()));
 
@@ -107,7 +117,7 @@ public class Node {
      *
      * @param node the successor
      */
-    private void successor(NodeProperties node) {
+    public void successor(NodeProperties node) {
         synchronized (this.fingers) {
             this.fingers[0] = node;
         }
@@ -150,19 +160,30 @@ public class Node {
     /**
      * Find the successor of the node with the given id
      *
-     * @param nodeId
+     * @param askingNode
      */
-    public void findSuccessor(int nodeId) {
-
+    public void findSuccessor(NodeProperties askingNode) {
+        if (askingNode.isInInterval(properties.getNodeId(),fingers[0].getNodeId()))
+            forwarder.makeRequest(fingers[0],askingNode.getIpAddress(),
+                    askingNode.getPort(), "found_successor");
+        else {
+            NodeProperties newNodeToAsk = closestPrecedingNode(askingNode);
+            forwarder.makeRequest(newNodeToAsk, askingNode.getIpAddress(),askingNode.getPort(),"find_successor");
+        }
     }
 
     /**
-     * Find the highest predecessor of id
+     * Find the highest predecessor of id.
      *
      * @param nodeId
+     * @return
      */
-    public void closestPrecedingNode(int nodeId) {
-
+    public NodeProperties closestPrecedingNode(NodeProperties nodeId) {
+        for (int i = 0; i < KEY_SIZE; i++) {
+            if (fingers[i].isInInterval(properties.getNodeId(), nodeId.getNodeId()))
+                return fingers[i];
+        }
+        return properties;
     }
 
     private ServerSocket createServerSocket() {

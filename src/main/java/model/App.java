@@ -61,7 +61,7 @@ public class App {
                     String[] parts = address.split(":");
                     String ip = parts[0];
                     int port = Integer.parseInt(parts[1]);
-                    String response = node.getForwarder().makeRequest(ip, port, "ping");
+                    String response = node.getForwarder().makeRequest(properties, ip, port, "ping");
                     System.out.println("Response from node " + sha1(ip + ":" + port) + ": " + response);
                     break;
                 case 0: // Leave the network
