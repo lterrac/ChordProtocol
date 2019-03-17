@@ -1,6 +1,8 @@
 package model;
 
-public class NodeProperties {
+import java.io.Serializable;
+
+public class NodeProperties implements Serializable {
 
     public static final int KEY_SIZE = 4;
 
@@ -39,4 +41,6 @@ public class NodeProperties {
     public boolean isInInterval(int min, int max) {
         return nodeId > min && nodeId <= max;
     }
+
+    public boolean isInIntervalStrict(int min, int max) { return nodeId > min && nodeId < max; }
 }

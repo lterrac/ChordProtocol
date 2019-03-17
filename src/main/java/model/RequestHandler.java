@@ -46,10 +46,9 @@ public class RequestHandler implements Runnable {
               example : RequestObj request = ((RequestObj) in.readObject()).handle(node);
             */
 
-            NodeProperties nodeProperties = ((NodeProperties) in.readObject());
-            String request = ((String) in.readObject());
+            Message msg = ((Message) in.readObject());
 
-            switch (request) {
+            switch (msg.getMessage()) {
                 case "ping": {
                     String response = "I'm alive!";
                     out.write(response.getBytes());
@@ -57,14 +56,33 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 case "find_successor": {
-                    node.findSuccessor(nodeProperties);
+                    //search for the successor of the node received from the network
+                    node.findSuccessor(msg.getProperties());
                 }
                 break;
                 case "found_successor": {
-                    node.successor(nodeProperties);
+                    //Set the successor of the current node to the one received from the network
+                    node.successor(msg.getProperties());
                 }
                 case "successor":
-                case "predecessor":
+                case "predecessor": {
+                    //Send the predecessor of the current node to the one that asked for it
+                    String receiverIp = msg.getProperties().getIpAddress();
+                    int receiverPort = msg.getProperties().getPort();
+                    node.getForwarder().makeRequest(node.getProperties(), receiverIp, receiverPort, "sent_predecessor");
+                }
+                break;
+                case "sent_predecessor": {
+                    //Once the predecessor is arrived, set it into the dedicated thread and call notify()
+                    //todo Check if a synchronized block is necessary
+                    node.getStabilize().setSuccessorPredecessor(msg.getProperties());
+                    node.getStabilize().notify();
+                }
+                break;
+                case "notify" : {
+                    node.notifySuccessor(msg.getProperties());
+                }
+                break;
                 case "update":
                 default:
                     logger.log(Level.WARNING, "This request doesn't exist");

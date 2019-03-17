@@ -8,6 +8,11 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 import static model.NodeProperties.KEY_SIZE;
@@ -39,6 +44,22 @@ public class Node {
      */
     private List<NodeProperties> successors;
 
+    private final ExecutorService pool;
+
+    /**
+     * Scheduled executor to run threads at regular time intervals
+     */
+    private ScheduledExecutorService checkPredecessorThread;
+    private ScheduledExecutorService fixFingersThread;
+    private ScheduledExecutorService stabilizeThread;
+
+    /**
+     * Classes containing the threads code
+     */
+    private CheckPredecessor checkPredecessor;
+    private FixFingers fixFingers;
+    private Stabilize stabilize;
+
     private NodeProperties predecessor;
 
     private ServerSocket serverSocket;
@@ -46,6 +67,11 @@ public class Node {
     public Node() {
         successors = new ArrayList<>();
         data = new HashMap<>();
+        pool = Executors.newScheduledThreadPool(3);
+
+        checkPredecessor = new CheckPredecessor();
+        fixFingers = new FixFingers();
+        stabilize = new Stabilize(this);
     }
 
     // Getter
@@ -77,6 +103,8 @@ public class Node {
         this.properties = new NodeProperties(sha1(ipAddress + ":" + newPort), ipAddress, newPort);
         this.successor(this.properties);
         this.predecessor = null;
+
+        startThreads();
 
         new Thread(new NodeSocketServer(this)).start();
     }
@@ -110,6 +138,13 @@ public class Node {
 
         //NodeProperties successor = forwarder.makeRequest(ip, port, "find_successor:" + properties.getNodeId());
 
+        startThreads();
+    }
+
+    private void startThreads() {
+        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor,0,6, TimeUnit.SECONDS);
+        fixFingersThread.scheduleAtFixedRate(fixFingers,2,6, TimeUnit.SECONDS);
+        stabilizeThread.scheduleAtFixedRate(stabilize,4,6, TimeUnit.SECONDS);
     }
 
     /**
@@ -123,38 +158,14 @@ public class Node {
         }
     }
 
-    //TODO: Will go into a thread
-
-    /**
-     * Veriﬁes n’s immediate successor, and tells the successor about n.
-     */
-    public void stabilize() {
-
-    }
-
     /**
      * @param predecessor node that could be the predecessor
      */
-    public void notifySuccessor(Node predecessor) {
-
-    }
-
-    //TODO: Will go into a thread
-
-    /**
-     * Refresh fingers table
-     */
-    public void fixFingers() {
-
-    }
-
-    //TODO: Will go into a thread
-
-    /**
-     * Check if predecessor has failed
-     */
-    public void checkPredecessor() {
-
+    public void notifySuccessor(NodeProperties predecessor) {
+        if (this.predecessor == null ||
+                predecessor.isInIntervalStrict(this.predecessor.getNodeId(), predecessor.getNodeId())) {
+            this.predecessor = predecessor;
+        }
     }
 
     /**
@@ -216,5 +227,13 @@ public class Node {
         // TODO: implement. If the key is not present return -1
         //
         return -1;
+    }
+
+    public NodeProperties[] getFingers() {
+        return fingers;
+    }
+
+    public Stabilize getStabilize() {
+        return stabilize;
     }
 }

@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 public class Forwarder {
     private static final Logger logger = Logger.getLogger(Forwarder.class.getName());
 
-    public void makeRequest(NodeProperties properties, String ip, int port, String message) {
+    public void makeRequest(NodeProperties nodeInformation, String ip, int port, String message) {
 
         Socket clientSocket;
         ObjectOutputStream out;
@@ -21,8 +21,8 @@ public class Forwarder {
         try {
             clientSocket = new Socket(ip, port);
             out = new ObjectOutputStream(clientSocket.getOutputStream());
-            out.writeObject(properties);
-            out.writeObject(message);
+            Message msg = new Message(nodeInformation,message);
+            out.writeObject(msg);
             out.flush();
         } catch (IOException e) {
             e.printStackTrace();

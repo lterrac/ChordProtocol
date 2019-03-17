@@ -61,8 +61,9 @@ public class App {
                     String[] parts = address.split(":");
                     String ip = parts[0];
                     int port = Integer.parseInt(parts[1]);
-                    String response = node.getForwarder().makeRequest(properties, ip, port, "ping");
-                    System.out.println("Response from node " + sha1(ip + ":" + port) + ": " + response);
+                    //todo this will be deleted, a protocol call must not be done in the application, must use methods offered by the node
+                    node.getForwarder().makeRequest(node.getProperties(), ip, port, "ping");
+                    System.out.println("Response from node " + sha1(ip + ":" + port) + ": ");
                     break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
