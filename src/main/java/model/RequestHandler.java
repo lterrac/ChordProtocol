@@ -1,6 +1,9 @@
 package model;
 
-import java.io.*;
+import java.io.EOFException;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.logging.Level;
@@ -9,12 +12,12 @@ import java.util.logging.Logger;
 
 public class RequestHandler implements Runnable {
 
-    private Socket client;
+    private static final Logger logger = Logger.getLogger(RequestHandler.class.getName());
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
+    private Socket client;
     private boolean stop;
     private Node node;
-    private static final Logger logger = Logger.getLogger(RequestHandler.class.getName());
 
     public RequestHandler(Socket client, Node node) throws IOException {
         this.client = client;
@@ -50,9 +53,23 @@ public class RequestHandler implements Runnable {
 
             switch (msg.getMessage()) {
                 case "ping": {
-                    String response = "I'm alive!";
-                    out.write(response.getBytes());
-                    out.close();
+                    String senderIp = msg.getProperties().getIpAddress();
+                    int senderPort = msg.getProperties().getPort();
+                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply");
+                }
+                break;
+                case "ping_reply": {
+                    System.out.println("Ping message received from node" + msg.getProperties().getNodeId());
+                }
+                break;
+                case "check_predecessor": {
+                    String senderIp = msg.getProperties().getIpAddress();
+                    int senderPort = msg.getProperties().getPort();
+                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply");
+                }
+                break;
+                case "check_predecessor_reply": {
+                    node.cancelCheckPredecessorTimer();
                 }
                 break;
                 case "find_successor": {
@@ -62,14 +79,14 @@ public class RequestHandler implements Runnable {
                 break;
                 case "found_successor": {
                     //Set the successor of the current node to the one received from the network
-                    node.successor(msg.getProperties());
+                    node.setSuccessor(msg.getProperties());
                 }
                 case "successor":
                 case "predecessor": {
                     //Send the predecessor of the current node to the one that asked for it
                     String receiverIp = msg.getProperties().getIpAddress();
                     int receiverPort = msg.getProperties().getPort();
-                    node.getForwarder().makeRequest(node.getProperties(), receiverIp, receiverPort, "sent_predecessor");
+                    node.forward(node.getProperties(), receiverIp, receiverPort, "sent_predecessor");
                 }
                 break;
                 case "sent_predecessor": {
@@ -79,7 +96,7 @@ public class RequestHandler implements Runnable {
                     node.getStabilize().notify();
                 }
                 break;
-                case "notify" : {
+                case "notify": {
                     node.notifySuccessor(msg.getProperties());
                 }
                 break;
@@ -104,7 +121,7 @@ public class RequestHandler implements Runnable {
     /**
      * Method that closes ClientHandler connection
      */
-    public void close() {
+    private void close() {
         System.out.println("Closing down connection");
         stop();
         if (out != null) {
@@ -115,9 +132,9 @@ public class RequestHandler implements Runnable {
             }
         }
 
-        if (out != null) {
+        if (in != null) {
             try {
-                out.close();
+                in.close();
             } catch (IOException e) {
                 System.err.println(e.getMessage());
             }

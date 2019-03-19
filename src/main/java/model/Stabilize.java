@@ -36,7 +36,7 @@ public class Stabilize implements Runnable {
 
         //If the predecessor of the successor is not the current node, set the new successor of the current node
         if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())){
-            node.successor(successorPredecessor);
+            node.setSuccessor(successorPredecessor);
         }
 
         //Inform the new successor that the current node might be its predecessor

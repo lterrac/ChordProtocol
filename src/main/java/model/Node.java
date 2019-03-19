@@ -69,7 +69,7 @@ public class Node {
         data = new HashMap<>();
         pool = Executors.newScheduledThreadPool(3);
 
-        checkPredecessor = new CheckPredecessor();
+        checkPredecessor = new CheckPredecessor(this);
         fixFingers = new FixFingers();
         stabilize = new Stabilize(this);
     }
@@ -83,8 +83,13 @@ public class Node {
         return serverSocket;
     }
 
-    public Forwarder getForwarder() {
-        return forwarder;
+    public NodeProperties getPredecessor(){
+        return predecessor;
+    }
+
+    // Setter
+    public void setPredecessor(NodeProperties predecessor) {
+        this.predecessor = predecessor;
     }
 
     /**
@@ -93,15 +98,15 @@ public class Node {
     public void create() {
         serverSocket = createServerSocket();
         forwarder = new Forwarder();
-        int newPort = serverSocket.getLocalPort();
+        int port = serverSocket.getLocalPort();
         String ipAddress = getCurrentIp();
 
         System.out.println("The IP of this node is : " + ipAddress);
-        System.out.println("The server is active on port " + newPort);
+        System.out.println("The server is active on port " + port);
 
         //Create node information
-        this.properties = new NodeProperties(sha1(ipAddress + ":" + newPort), ipAddress, newPort);
-        this.successor(this.properties);
+        this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
+        this.setSuccessor(this.properties);
         this.predecessor = null;
 
         startThreads();
@@ -152,13 +157,15 @@ public class Node {
      *
      * @param node the successor
      */
-    public void successor(NodeProperties node) {
+    public void setSuccessor(NodeProperties node) {
         synchronized (this.fingers) {
             this.fingers[0] = node;
         }
     }
 
     /**
+     * Notify the current node that a new predecessor can exists fot itself
+     *
      * @param predecessor node that could be the predecessor
      */
     public void notifySuccessor(NodeProperties predecessor) {
@@ -197,6 +204,11 @@ public class Node {
         return properties;
     }
 
+    /**
+     * Create a new server socket that implements the server side of a node
+     *
+     * @return a new {@code ServerSocket}
+     */
     private ServerSocket createServerSocket() {
         ServerSocket serverSocket = null;
 
@@ -210,6 +222,11 @@ public class Node {
         return serverSocket;
     }
 
+    /**
+     * Get the Ip address of the current node
+     *
+     * @return the Ip address of the machine on which the node is running
+     */
     private String getCurrentIp() {
         //Find Ip address, it will be published later for joining
         InetAddress currentIp = null;
@@ -223,17 +240,47 @@ public class Node {
         return currentIp.getHostAddress();
     }
 
-    public int lookup(int key) {
-        // TODO: implement. If the key is not present return -1
-        //
-        return -1;
+    /**
+     * Look for the owner of a resource in the net
+     *
+     * @param key is the hash of the resource you're looking for in the net
+     * @return the Ip address of the node that contains the resource, otherwise null
+     */
+    public String lookup(int key) {
+        // TODO: implement
+
+        return null;
     }
 
+    /**
+     * Get the finger table of the current node
+     *
+     * @return an array of {@code NodeProperties}
+     */
     public NodeProperties[] getFingers() {
         return fingers;
     }
 
     public Stabilize getStabilize() {
         return stabilize;
+    }
+
+    /**
+     * Cancel the timer that has been set before sending the request to check if the predecessor is still alive
+     */
+    public void cancelCheckPredecessorTimer(){
+        checkPredecessor.cancelTimer();
+    }
+
+    /**
+     * Forward a request to a client
+     *
+     * @param nodeInfo is the {@code NodeProperties} information
+     * @param ip is the Ip address of the client to which to forward the request
+     * @param port is the port of the client to which to forward the request
+     * @param msg is the kind of request
+     */
+    public void forward(NodeProperties nodeInfo, String ip, int port, String msg){
+        forwarder.makeRequest(nodeInfo, ip, port, msg);
     }
 }

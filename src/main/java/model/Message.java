@@ -15,16 +15,7 @@ public class Message implements Serializable {
     public NodeProperties getProperties() {
         return properties;
     }
-
-    public void setProperties(NodeProperties properties) {
-        this.properties = properties;
-    }
-
     public String getMessage() {
         return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 }
