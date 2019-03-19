@@ -62,7 +62,6 @@ public class App {
                     String ip = parts[0];
                     int port = Integer.parseInt(parts[1]);
                     node.forward(node.getProperties(), ip, port, "ping", 0);
-                    System.out.println("Response from node " + sha1(ip + ":" + port) + ": ");
                     break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");

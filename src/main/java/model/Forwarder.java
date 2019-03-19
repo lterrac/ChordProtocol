@@ -25,6 +25,8 @@ public class Forwarder {
             Message msg = new Message(nodeInformation, message, fixIndex);
             out.writeObject(msg);
             out.flush();
+            out.close();
+            clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

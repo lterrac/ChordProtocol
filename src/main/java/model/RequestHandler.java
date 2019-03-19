@@ -59,7 +59,7 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 case "ping_reply": {
-                    System.out.println("Ping message received from node" + msg.getProperties().getNodeId());
+                    System.out.println("Ping message received from node " + msg.getProperties().getNodeId());
                 }
                 break;
                 case "check_predecessor": {

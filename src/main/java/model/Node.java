@@ -24,7 +24,7 @@ public class Node {
      * Finger table of the node
      */
     private final NodeProperties[] fingers = new NodeProperties[KEY_SIZE];
-    private final ExecutorService pool;
+
     /**
      * Represents the "client side" of a node. It sends requests to other nodes
      */
@@ -67,11 +67,17 @@ public class Node {
     public Node() {
         successors = new ArrayList<>();
         data = new HashMap<>();
-        pool = Executors.newScheduledThreadPool(3);
 
         checkPredecessor = new CheckPredecessor(this);
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
+
+        //checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
+        //fixFingersThread = Executors.newSingleThreadScheduledExecutor();
+        //stabilizeThread = Executors.newSingleThreadScheduledExecutor();
+
+        fixFingersThread = Executors.newScheduledThreadPool(1);
+        checkPredecessorThread = Executors.newScheduledThreadPool(1);
     }
 
     // Getter
@@ -105,15 +111,21 @@ public class Node {
         System.out.println("The server is active on port " + port);
 
         //Create node information
-        this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
-        this.setSuccessor(this.properties);
-        this.predecessor = null;
+        initializeNode(ipAddress, port);
 
         startThreads();
 
         new Thread(new NodeSocketServer(this)).start();
     }
 
+    private void initializeNode(String ipAddress, int port){
+        this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
+        this.setSuccessor(this.properties);
+        this.predecessor = null;
+        //for(int i = 0; i < KEY_SIZE; i++){
+        //    fingers[i] = properties;
+        //}
+    }
     /**
      * Join a Ring containing the known Node
      */
@@ -147,9 +159,9 @@ public class Node {
     }
 
     private void startThreads() {
+        // stabilizeThread.scheduleAtFixedRate(stabilize, 4, 6, TimeUnit.SECONDS);
         checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, 6, TimeUnit.SECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 2, 6, TimeUnit.SECONDS);
-        stabilizeThread.scheduleAtFixedRate(stabilize, 4, 6, TimeUnit.SECONDS);
     }
 
     /**
@@ -193,7 +205,7 @@ public class Node {
      * Find the successor of the the askingNode to update its finger table
      *
      * @param askingNode is the node that has sent the first fix_finger request
-     * @param index is the index of the finger table to be updated
+     * @param index      is the index of the finger table to be updated
      */
     public void fixFingerSuccessor(NodeProperties askingNode, int index) {
         if (index > properties.getNodeId() && index <= fingers[0].getNodeId()) {
