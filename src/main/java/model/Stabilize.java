@@ -19,7 +19,7 @@ public class Stabilize implements Runnable {
         NodeProperties successor = node.getFingers()[0];
 
         //Ask to the successor for its predecessor
-        node.getForwarder().makeRequest(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor");
+        node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0);
 
         //Wait for the response coming from the successor
         synchronized (this) {
@@ -40,7 +40,7 @@ public class Stabilize implements Runnable {
         }
 
         //Inform the new successor that the current node might be its predecessor
-        node.getForwarder().makeRequest(currentNode, successor.getIpAddress(), successor.getPort(), "notify");
+        node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "notify", 0);
 
     }
 

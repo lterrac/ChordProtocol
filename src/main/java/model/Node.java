@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
 import static model.NodeProperties.KEY_SIZE;
@@ -25,6 +24,7 @@ public class Node {
      * Finger table of the node
      */
     private final NodeProperties[] fingers = new NodeProperties[KEY_SIZE];
+    private final ExecutorService pool;
     /**
      * Represents the "client side" of a node. It sends requests to other nodes
      */
@@ -33,19 +33,14 @@ public class Node {
      * Contains information about the node
      */
     private NodeProperties properties;
-
     /**
      * Data contained in the node
      */
     private HashMap<Integer, Serializable> data;
-
     /**
      * List of adjacent successors of the node
      */
     private List<NodeProperties> successors;
-
-    private final ExecutorService pool;
-
     /**
      * Scheduled executor to run threads at regular time intervals
      */
@@ -64,13 +59,18 @@ public class Node {
 
     private ServerSocket serverSocket;
 
+    /**
+     * Useful to save the index of the finger table to which to apply the fix_finger algorithm
+     */
+    private int n_fix;
+
     public Node() {
         successors = new ArrayList<>();
         data = new HashMap<>();
         pool = Executors.newScheduledThreadPool(3);
 
         checkPredecessor = new CheckPredecessor(this);
-        fixFingers = new FixFingers();
+        fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
     }
 
@@ -83,7 +83,7 @@ public class Node {
         return serverSocket;
     }
 
-    public NodeProperties getPredecessor(){
+    public NodeProperties getPredecessor() {
         return predecessor;
     }
 
@@ -135,7 +135,7 @@ public class Node {
          */
 
         //TODO Put into a thread otherwise it won't be possible to handle other requests until the response is received!
-        forwarder.makeRequest(properties, ip,port,"find_successor");
+        forwarder.makeRequest(properties, ip, port, "find_successor", 0);
 
         //TODO What is this PAAAAAAAAAAAAAAAOOOOOOOOOOLOOOOOOOOOOOOOO
         //this.successors.remove(0);
@@ -147,9 +147,9 @@ public class Node {
     }
 
     private void startThreads() {
-        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor,0,6, TimeUnit.SECONDS);
-        fixFingersThread.scheduleAtFixedRate(fixFingers,2,6, TimeUnit.SECONDS);
-        stabilizeThread.scheduleAtFixedRate(stabilize,4,6, TimeUnit.SECONDS);
+        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, 6, TimeUnit.SECONDS);
+        fixFingersThread.scheduleAtFixedRate(fixFingers, 2, 6, TimeUnit.SECONDS);
+        stabilizeThread.scheduleAtFixedRate(stabilize, 4, 6, TimeUnit.SECONDS);
     }
 
     /**
@@ -178,27 +178,41 @@ public class Node {
     /**
      * Find the successor of the node with the given id
      *
-     * @param askingNode
+     * @param askingNode is the
      */
     public void findSuccessor(NodeProperties askingNode) {
-        if (askingNode.isInInterval(properties.getNodeId(),fingers[0].getNodeId()))
-            forwarder.makeRequest(fingers[0],askingNode.getIpAddress(),
-                    askingNode.getPort(), "found_successor");
+        if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId()))
+            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "found_successor", 0);
         else {
-            NodeProperties newNodeToAsk = closestPrecedingNode(askingNode);
-            forwarder.makeRequest(newNodeToAsk, askingNode.getIpAddress(),askingNode.getPort(),"find_successor");
+            NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
+            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0);
+        }
+    }
+
+    /**
+     * Find the successor of the the askingNode to update its finger table
+     *
+     * @param askingNode is the node that has sent the first fix_finger request
+     * @param index is the index of the finger table to be updated
+     */
+    public void fixFingerSuccessor(NodeProperties askingNode, int index) {
+        if (index > properties.getNodeId() && index <= fingers[0].getNodeId()) {
+            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", index);
+        } else {
+            NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
+            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "fix_finger", index);
         }
     }
 
     /**
      * Find the highest predecessor of id.
      *
-     * @param nodeId
-     * @return
+     * @param nodeId is the id of the target node
+     * @return the closest node to the target one
      */
-    public NodeProperties closestPrecedingNode(NodeProperties nodeId) {
+    private NodeProperties closestPrecedingNode(int nodeId) {
         for (int i = 0; i < KEY_SIZE; i++) {
-            if (fingers[i].isInInterval(properties.getNodeId(), nodeId.getNodeId()))
+            if (fingers[i].isInInterval(properties.getNodeId(), nodeId))
                 return fingers[i];
         }
         return properties;
@@ -261,14 +275,20 @@ public class Node {
         return fingers;
     }
 
-    public Stabilize getStabilize() {
-        return stabilize;
+    /**
+     * Update the predecessor node of the successor
+     *
+     * @param newNode is the node to be set as predecessor for the successor
+     */
+    public void setSuccessorPredecessor(NodeProperties newNode) {
+        stabilize.setSuccessorPredecessor(newNode);
+        stabilize.notify();
     }
 
     /**
      * Cancel the timer that has been set before sending the request to check if the predecessor is still alive
      */
-    public void cancelCheckPredecessorTimer(){
+    public void cancelCheckPredecessorTimer() {
         checkPredecessor.cancelTimer();
     }
 
@@ -276,11 +296,42 @@ public class Node {
      * Forward a request to a client
      *
      * @param nodeInfo is the {@code NodeProperties} information
-     * @param ip is the Ip address of the client to which to forward the request
-     * @param port is the port of the client to which to forward the request
-     * @param msg is the kind of request
+     * @param ip       is the Ip address of the client to which to forward the request
+     * @param port     is the port of the client to which to forward the request
+     * @param msg      is the kind of request
      */
-    public void forward(NodeProperties nodeInfo, String ip, int port, String msg){
-        forwarder.makeRequest(nodeInfo, ip, port, msg);
+    public void forward(NodeProperties nodeInfo, String ip, int port, String msg, int fixIndex) {
+        forwarder.makeRequest(nodeInfo, ip, port, msg, fixIndex);
+    }
+
+    /**
+     * Update and return the n_fix variable to properly run the fix_finger algorithm
+     *
+     * @return the index of the finger table to be used during the fix_finger algorithm
+     */
+    public int nextFinger() {
+        if (n_fix == KEY_SIZE) {
+            n_fix = 1;
+        } else {
+            n_fix += 1;
+        }
+        return n_fix;
+    }
+
+    /**
+     * Update the finger table
+     *
+     * @param i       is the index of the table
+     * @param newNode is the new value for the row with index i in the table
+     */
+    public void updateFinger(int i, NodeProperties newNode) {
+        synchronized (fingers[i]) {
+            fingers[i] = newNode;
+        }
+    }
+
+    public void checkPredecessor() {
+        forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0);
     }
 }
+

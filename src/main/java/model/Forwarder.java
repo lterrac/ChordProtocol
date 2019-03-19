@@ -1,13 +1,14 @@
 package model;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.logging.Logger;
 
 public class Forwarder {
     private static final Logger logger = Logger.getLogger(Forwarder.class.getName());
 
-    public void makeRequest(NodeProperties nodeInformation, String ip, int port, String message) {
+    public void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixIndex) {
 
         Socket clientSocket;
         ObjectOutputStream out;
@@ -21,7 +22,7 @@ public class Forwarder {
         try {
             clientSocket = new Socket(ip, port);
             out = new ObjectOutputStream(clientSocket.getOutputStream());
-            Message msg = new Message(nodeInformation,message);
+            Message msg = new Message(nodeInformation, message, fixIndex);
             out.writeObject(msg);
             out.flush();
         } catch (IOException e) {

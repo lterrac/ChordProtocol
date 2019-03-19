@@ -45,9 +45,9 @@ public class App {
                 case 5: // Look for a key
                     System.out.println("Insert the key you are looking for (it must be in the range [0," + KEY_SIZE + "]):");
                     int key = in.nextInt();
-                    int nodeId = node.lookup(key);
-                    if (nodeId != -1) {
-                        System.out.println("The resource is kept by node " + nodeId + ".");
+                    String nodeIp = node.lookup(key);
+                    if (nodeIp != null) {
+                        System.out.println("The resource is kept by node " + nodeIp + ".");
                     } else {
                         System.out.println("The resource doesn't exist in the net.");
                     }
@@ -61,8 +61,7 @@ public class App {
                     String[] parts = address.split(":");
                     String ip = parts[0];
                     int port = Integer.parseInt(parts[1]);
-                    //todo this will be deleted, a protocol call must not be done in the application, must use methods offered by the node
-                    node.getForwarder().makeRequest(node.getProperties(), ip, port, "ping");
+                    node.forward(node.getProperties(), ip, port, "ping", 0);
                     System.out.println("Response from node " + sha1(ip + ":" + port) + ": ");
                     break;
                 case 0: // Leave the network
