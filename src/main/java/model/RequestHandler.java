@@ -55,7 +55,7 @@ public class RequestHandler implements Runnable {
                 case "ping": {
                     String senderIp = msg.getProperties().getIpAddress();
                     int senderPort = msg.getProperties().getPort();
-                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply", 0);
+                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply",0, 0, 0);
                 }
                 break;
                 case "ping_reply": {
@@ -65,7 +65,7 @@ public class RequestHandler implements Runnable {
                 case "check_predecessor": {
                     String senderIp = msg.getProperties().getIpAddress();
                     int senderPort = msg.getProperties().getPort();
-                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply", 0);
+                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply", 0,0, 0);
                 }
                 break;
                 case "check_predecessor_reply": {
@@ -73,7 +73,7 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 case "fix_finger": {
-                    node.fixFingerSuccessor(msg.getProperties(), msg.getFixIndex());
+                    node.fixFingerSuccessor(msg.getProperties(), msg.getFixId(), msg.getFixIndex());
                 }
                 break;
                 case "fix_finger_reply": {
@@ -86,29 +86,31 @@ public class RequestHandler implements Runnable {
                     node.findSuccessor(msg.getProperties());
                 }
                 break;
-                case "found_successor": {
+                case "find_successor_reply": {
                     //Set the successor of the current node to the one received from the network
                     node.setSuccessor(msg.getProperties());
                 }
-                case "successor":
                 case "predecessor": {
                     //Send the predecessor of the current node to the one that asked for it
                     String receiverIp = msg.getProperties().getIpAddress();
                     int receiverPort = msg.getProperties().getPort();
-                    node.forward(node.getProperties(), receiverIp, receiverPort, "sent_predecessor", 0);
+                    node.forward(node.getProperties(), receiverIp, receiverPort, "predecessor_reply", 0,0, 0);
                 }
                 break;
-                case "sent_predecessor": {
+                case "predecessor_reply": {
                     //Once the predecessor is arrived, set it into the dedicated thread and call notify()
                     //todo Check if a synchronized block is necessary
                     node.setSuccessorPredecessor(msg.getProperties());
+                }
+                break;
+                case "lookup": {
+                    node.lookup(msg.getKey());
                 }
                 break;
                 case "notify": {
                     node.notifySuccessor(msg.getProperties());
                 }
                 break;
-                case "update":
                 default:
                     logger.log(Level.WARNING, "This request doesn't exist");
             }

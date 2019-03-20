@@ -8,7 +8,6 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -72,12 +71,9 @@ public class Node {
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
 
-        //checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
-        //fixFingersThread = Executors.newSingleThreadScheduledExecutor();
+        checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
+        fixFingersThread = Executors.newSingleThreadScheduledExecutor();
         //stabilizeThread = Executors.newSingleThreadScheduledExecutor();
-
-        fixFingersThread = Executors.newScheduledThreadPool(1);
-        checkPredecessorThread = Executors.newScheduledThreadPool(1);
     }
 
     // Getter
@@ -118,14 +114,15 @@ public class Node {
         new Thread(new NodeSocketServer(this)).start();
     }
 
-    private void initializeNode(String ipAddress, int port){
+    private void initializeNode(String ipAddress, int port) {
         this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
         this.setSuccessor(this.properties);
         this.predecessor = null;
-        //for(int i = 0; i < KEY_SIZE; i++){
-        //    fingers[i] = properties;
-        //}
+        for (int i = 0; i < KEY_SIZE; i++) {
+            fingers[i] = properties;
+        }
     }
+
     /**
      * Join a Ring containing the known Node
      */
@@ -147,7 +144,7 @@ public class Node {
          */
 
         //TODO Put into a thread otherwise it won't be possible to handle other requests until the response is received!
-        forwarder.makeRequest(properties, ip, port, "find_successor", 0);
+        forwarder.makeRequest(properties, ip, port, "find_successor", 0, 0, 0);
 
         //TODO What is this PAAAAAAAAAAAAAAAOOOOOOOOOOLOOOOOOOOOOOOOO
         //this.successors.remove(0);
@@ -194,10 +191,10 @@ public class Node {
      */
     public void findSuccessor(NodeProperties askingNode) {
         if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId()))
-            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "found_successor", 0);
+            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
         else {
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
-            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0);
+            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
         }
     }
 
@@ -205,14 +202,15 @@ public class Node {
      * Find the successor of the the askingNode to update its finger table
      *
      * @param askingNode is the node that has sent the first fix_finger request
-     * @param index      is the index of the finger table to be updated
+     * @param fixIndex   is the index of the finger table to be updated
+     * @param fixId      is the upper bound Id of the fixIndex-th row of the finger table
      */
-    public void fixFingerSuccessor(NodeProperties askingNode, int index) {
-        if (index > properties.getNodeId() && index <= fingers[0].getNodeId()) {
-            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", index);
+    public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
+        if (fixIndex >= properties.getNodeId() && fixIndex <= fingers[0].getNodeId()) {
+            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
         } else {
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
-            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "fix_finger", index);
+            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "fix_finger", fixId, fixIndex, 0);
         }
     }
 
@@ -311,9 +309,10 @@ public class Node {
      * @param ip       is the Ip address of the client to which to forward the request
      * @param port     is the port of the client to which to forward the request
      * @param msg      is the kind of request
+     * @param key      is the hash of the key to search on the net
      */
-    public void forward(NodeProperties nodeInfo, String ip, int port, String msg, int fixIndex) {
-        forwarder.makeRequest(nodeInfo, ip, port, msg, fixIndex);
+    public void forward(NodeProperties nodeInfo, String ip, int port, String msg, int fixId, int fixIndex, int key) {
+        forwarder.makeRequest(nodeInfo, ip, port, msg, fixId, fixIndex, key);
     }
 
     /**
@@ -322,8 +321,8 @@ public class Node {
      * @return the index of the finger table to be used during the fix_finger algorithm
      */
     public int nextFinger() {
-        if (n_fix == KEY_SIZE) {
-            n_fix = 1;
+        if (n_fix == KEY_SIZE - 1) {
+            n_fix = 0;
         } else {
             n_fix += 1;
         }
@@ -337,13 +336,18 @@ public class Node {
      * @param newNode is the new value for the row with index i in the table
      */
     public void updateFinger(int i, NodeProperties newNode) {
-        synchronized (fingers[i]) {
-            fingers[i] = newNode;
+
+        // TODO: synchronized?
+        fingers[i] = newNode;
+
+        System.out.println("Finger table of node " + properties.getNodeId());
+        for (int j = 0; j < KEY_SIZE; j++) {
+            System.out.println(fingers[j]);
         }
     }
 
     public void checkPredecessor() {
-        forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0);
+        forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0);
     }
 }
 

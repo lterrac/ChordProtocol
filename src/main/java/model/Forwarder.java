@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 public class Forwarder {
     private static final Logger logger = Logger.getLogger(Forwarder.class.getName());
 
-    public void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixIndex) {
+    public void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey) {
 
         Socket clientSocket;
         ObjectOutputStream out;
@@ -22,7 +22,7 @@ public class Forwarder {
         try {
             clientSocket = new Socket(ip, port);
             out = new ObjectOutputStream(clientSocket.getOutputStream());
-            Message msg = new Message(nodeInformation, message, fixIndex);
+            Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey);
             out.writeObject(msg);
             out.flush();
             out.close();

@@ -13,9 +13,9 @@ public class FixFingers implements Runnable {
 
     @Override
     public void run() {
-        int next = node.nextFinger();
-        int index = node.getProperties().getNodeId() + (int)Math.pow(2, next - 1);
-        node.fixFingerSuccessor(node.getProperties(), index);
+        int fixIndex = node.nextFinger();
+        int fixId = node.getProperties().getNodeId() + (int)Math.pow(2, fixIndex - 1);
+        node.fixFingerSuccessor(node.getProperties(), fixId, fixIndex);
     }
 
 }

@@ -3,7 +3,6 @@ package model;
 import java.util.Scanner;
 
 import static model.NodeProperties.KEY_SIZE;
-import static utilities.Utilities.sha1;
 
 public class App {
 
@@ -61,7 +60,7 @@ public class App {
                     String[] parts = address.split(":");
                     String ip = parts[0];
                     int port = Integer.parseInt(parts[1]);
-                    node.forward(node.getProperties(), ip, port, "ping", 0);
+                    node.forward(node.getProperties(), ip, port, "ping", 0, 0, 0);
                     break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
