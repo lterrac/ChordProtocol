@@ -90,6 +90,7 @@ public class RequestHandler implements Runnable {
                     //Set the successor of the current node to the one received from the network
                     node.setSuccessor(msg.getProperties());
                 }
+                break;
                 case "predecessor": {
                     //Send the predecessor of the current node to the one that asked for it
                     String receiverIp = msg.getProperties().getIpAddress();

@@ -64,6 +64,7 @@ public class Node {
     private int n_fix;
 
     public Node() {
+        n_fix = -1;
         successors = new ArrayList<>();
         data = new HashMap<>();
 
@@ -133,26 +134,15 @@ public class Node {
         int newPort = serverSocket.getLocalPort();
         String newIp = getCurrentIp();
 
-        this.properties = new NodeProperties(sha1(newIp + ":" + newPort), newIp, newPort);
-        this.predecessor = null;
+        System.out.println("The IP of this node is : " + newIp);
+        System.out.println("The server is active on port " + newPort);
 
-        /*
-        Debug line: try the connection with a ping message
+        initializeNode(newIp, newPort);
 
-        forwarder.makeRequest(ip, port, "ping");
-
-         */
-
-        //TODO Put into a thread otherwise it won't be possible to handle other requests until the response is received!
         forwarder.makeRequest(properties, ip, port, "find_successor", 0, 0, 0);
 
-        //TODO What is this PAAAAAAAAAAAAAAAOOOOOOOOOOLOOOOOOOOOOOOOO
-        //this.successors.remove(0);
-        //this.successors.add(0, findSuccessor(properties.getNodeId()));
-
-        //NodeProperties successor = forwarder.makeRequest(ip, port, "find_successor:" + properties.getNodeId());
-
         startThreads();
+
     }
 
     private void startThreads() {
@@ -190,9 +180,11 @@ public class Node {
      * @param askingNode is the
      */
     public void findSuccessor(NodeProperties askingNode) {
-        if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId()))
+        if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
+            System.out.println("Found------------------------------------------------");
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
-        else {
+        } else {
+            System.out.println("Forward----------------------------------------------");
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
             forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
         }
@@ -206,7 +198,13 @@ public class Node {
      * @param fixId      is the upper bound Id of the fixIndex-th row of the finger table
      */
     public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
+
+        System.out.println("fixIndex: " + fixIndex);
+        System.out.println("fixId: " + fixId);
+        System.out.println("properties: " + properties.getNodeId());
+        System.out.println("fingers: " + fingers[0].getNodeId());
         if (fixIndex >= properties.getNodeId() && fixIndex <= fingers[0].getNodeId()) {
+            System.out.println("ENTRA");
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
         } else {
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
@@ -221,9 +219,7 @@ public class Node {
      * @return the closest node to the target one
      */
     private NodeProperties closestPrecedingNode(int nodeId) {
-        for (int i = 0; i < KEY_SIZE; i++) {
-            System.out.println(fingers[i]);
-            System.out.println(properties.getNodeId());
+        for (int i = KEY_SIZE-1; i >= 0; i--) {
             if (fingers[i].isInInterval(properties.getNodeId(), nodeId))
                 return fingers[i];
         }
@@ -345,7 +341,7 @@ public class Node {
 
         System.out.println("Finger table of node " + properties.getNodeId());
         for (int j = 0; j < KEY_SIZE; j++) {
-            System.out.println(fingers[j]);
+            System.out.println(fingers[j].getNodeId());
         }
     }
 
