@@ -157,9 +157,8 @@ public class Node {
      * @param node the successor
      */
     public void setSuccessor(NodeProperties node) {
-        synchronized (this.fingers) {
-            this.fingers[0] = node;
-        }
+        // TODO synchronized??
+        this.fingers[0] = node;
     }
 
     /**
@@ -180,11 +179,17 @@ public class Node {
      * @param askingNode is the
      */
     public void findSuccessor(NodeProperties askingNode) {
-        if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
-            System.out.println("Found------------------------------------------------");
+        if (askingNode.getNodeId() < properties.getNodeId()) {
+            System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
+            forwarder.makeRequest(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+        } else if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
+            System.out.println("Found --------------------------------------------------------------------------------");
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+        } else if (askingNode.getNodeId() > fingers[KEY_SIZE - 1].getNodeId()) {
+            System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
+            forwarder.makeRequest(fingers[KEY_SIZE - 1], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
         } else {
-            System.out.println("Forward----------------------------------------------");
+            System.out.println("Forward ------------------------------------------------------------------------------");
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
             forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
         }
@@ -219,7 +224,7 @@ public class Node {
      * @return the closest node to the target one
      */
     private NodeProperties closestPrecedingNode(int nodeId) {
-        for (int i = KEY_SIZE-1; i >= 0; i--) {
+        for (int i = KEY_SIZE - 1; i >= 0; i--) {
             if (fingers[i].isInInterval(properties.getNodeId(), nodeId))
                 return fingers[i];
         }
