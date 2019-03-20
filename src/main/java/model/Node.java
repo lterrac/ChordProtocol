@@ -78,6 +78,7 @@ public class Node {
 
         fixFingersThread = Executors.newScheduledThreadPool(1);
         checkPredecessorThread = Executors.newScheduledThreadPool(1);
+
     }
 
     // Getter
@@ -122,9 +123,9 @@ public class Node {
         this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
         this.setSuccessor(this.properties);
         this.predecessor = null;
-        //for(int i = 0; i < KEY_SIZE; i++){
-        //    fingers[i] = properties;
-        //}
+        for(int i = 0; i < KEY_SIZE; i++){
+            fingers[i] = properties;
+        }
     }
     /**
      * Join a Ring containing the known Node
@@ -224,6 +225,8 @@ public class Node {
      */
     private NodeProperties closestPrecedingNode(int nodeId) {
         for (int i = 0; i < KEY_SIZE; i++) {
+            System.out.println(fingers[i]);
+            System.out.println(properties.getNodeId());
             if (fingers[i].isInInterval(properties.getNodeId(), nodeId))
                 return fingers[i];
         }
@@ -322,8 +325,8 @@ public class Node {
      * @return the index of the finger table to be used during the fix_finger algorithm
      */
     public int nextFinger() {
-        if (n_fix == KEY_SIZE) {
-            n_fix = 1;
+        if (n_fix == KEY_SIZE-1) {
+            n_fix = 0;
         } else {
             n_fix += 1;
         }
