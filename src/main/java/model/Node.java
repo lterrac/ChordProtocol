@@ -222,6 +222,8 @@ public class Node {
      */
     private NodeProperties closestPrecedingNode(int nodeId) {
         for (int i = 0; i < KEY_SIZE; i++) {
+            System.out.println(fingers[i]);
+            System.out.println(properties.getNodeId());
             if (fingers[i].isInInterval(properties.getNodeId(), nodeId))
                 return fingers[i];
         }
@@ -322,6 +324,7 @@ public class Node {
      */
     public int nextFinger() {
         if (n_fix == KEY_SIZE - 1) {
+
             n_fix = 0;
         } else {
             n_fix += 1;
