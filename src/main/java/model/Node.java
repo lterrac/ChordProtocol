@@ -74,7 +74,7 @@ public class Node {
 
         checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
-        //stabilizeThread = Executors.newSingleThreadScheduledExecutor();
+        stabilizeThread = Executors.newSingleThreadScheduledExecutor();
     }
 
     // Getter
@@ -142,13 +142,14 @@ public class Node {
         forwarder.makeRequest(properties, ip, port, "find_successor", 0, 0, 0);
 
         startThreads();
+        new Thread(new NodeSocketServer(this)).start();
 
     }
 
     private void startThreads() {
-        // stabilizeThread.scheduleAtFixedRate(stabilize, 4, 6, TimeUnit.SECONDS);
         checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, 6, TimeUnit.SECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 2, 6, TimeUnit.SECONDS);
+        stabilizeThread.scheduleAtFixedRate(stabilize, 4, 6, TimeUnit.SECONDS);
     }
 
     /**
@@ -293,9 +294,12 @@ public class Node {
      *
      * @param newNode is the node to be set as predecessor for the successor
      */
+
     public void setSuccessorPredecessor(NodeProperties newNode) {
-        stabilize.setSuccessorPredecessor(newNode);
-        stabilize.notify();
+        synchronized (stabilize) {
+            stabilize.setSuccessorPredecessor(newNode);
+            stabilize.notifyAll();
+        }
     }
 
     /**

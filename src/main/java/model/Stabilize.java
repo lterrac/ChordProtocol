@@ -1,5 +1,7 @@
 package model;
 
+import sun.awt.AWTAccessor;
+
 /**
  * Veriﬁes n’s immediate successor, and tells the successor about n.
  */
@@ -35,6 +37,7 @@ public class Stabilize implements Runnable {
         }
 
         //If the predecessor of the successor is not the current node, set the new successor of the current node
+        System.out.println("CI ARRIVA");
         if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
             node.setSuccessor(successorPredecessor);
         }
