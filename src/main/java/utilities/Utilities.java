@@ -18,6 +18,11 @@ public class Utilities {
      */
     public static void main(String[] args) throws NoSuchAlgorithmException {
         System.out.println(sha1("192.168.1.140:9001"));
+        System.out.println(sha1("192.168.1.140:9002"));
+        System.out.println(sha1("192.168.1.140:9003"));
+        System.out.println(sha1("192.168.1.140:9004"));
+        System.out.println(sha1("192.168.1.140:9005"));
+        System.out.println((int) Math.pow(2,KEY_SIZE));
     }
 
 
@@ -28,7 +33,9 @@ public class Utilities {
             MessageDigest msdDigest = MessageDigest.getInstance("SHA-1");
             msdDigest.update(text.getBytes("UTF-8"), 0, text.length());
             sha1 = DatatypeConverter.printHexBinary(msdDigest.digest());
-            return Integer.parseInt(new BigInteger(sha1, 16).mod(BigInteger.valueOf(KEY_SIZE)).toString(2), 2);
+            return Integer.parseInt(new BigInteger(sha1, 16)
+                    .mod(BigInteger.valueOf((int) Math.pow(2,KEY_SIZE)))
+                    .toString(2), 2);
         }
         catch(Exception e)
         {

@@ -40,8 +40,19 @@ public class NodeProperties implements Serializable {
     }
 
     public boolean isInInterval(int min, int max) {
-        return nodeId > min && nodeId <= max;
+        if (min < max)
+            return nodeId > min && nodeId <= max;
+        else
+            return (this.isInIntervalStrict(min, (int) Math.pow(2, KEY_SIZE))) || (this.isInIntervalStrict(-1, max));
     }
+
+    public static boolean isInIntervalInteger(int min, int value, int max) {
+        if (min < max)
+            return value > min && value <= max;
+        else
+            return (min > value && value < (int) Math.pow(2, KEY_SIZE)) || (-1 > value && value > max);
+    }
+
 
     public boolean isInIntervalStrict(int min, int max) { return nodeId > min && nodeId < max; }
 
