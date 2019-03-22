@@ -4,7 +4,7 @@ import java.io.Serializable;
 
 public class NodeProperties implements Serializable {
 
-    public static final int KEY_SIZE = 4; // size of the keys
+    public static final int KEY_SIZE = 8; // size of the keys
     public static final int CHECK_TIME = 6000; // waiting time for the checkPredecessor request
 
     private final int nodeId;

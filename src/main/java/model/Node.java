@@ -2,6 +2,7 @@ package model;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
@@ -47,6 +48,7 @@ public class Node {
     private ScheduledExecutorService checkPredecessorThread;
     private ScheduledExecutorService fixFingersThread;
     private ScheduledExecutorService stabilizeThread;
+    private ScheduledExecutorService highestNodeThread;
 
     /**
      * Classes containing the threads code
@@ -54,7 +56,7 @@ public class Node {
     private CheckPredecessor checkPredecessor;
     private FixFingers fixFingers;
     private Stabilize stabilize;
-
+    private HighestNode highestNode;
     private NodeProperties predecessor;
 
     private ServerSocket serverSocket;
@@ -98,6 +100,7 @@ public class Node {
      */
     public void create() {
 
+        highestNode = new HighestNode(this, true);
         startNode();
         startThreads();
 
@@ -122,9 +125,11 @@ public class Node {
         this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
         this.setSuccessor(this.properties);
         this.predecessor = null;
+        /*
         for (int i = 0; i < KEY_SIZE; i++) {
             fingers[i] = properties;
         }
+         */
     }
 
     /**
@@ -132,6 +137,7 @@ public class Node {
      */
     public void join(String ip, int port) {
 
+        highestNode = new HighestNode(this, false);
         startNode();
 
         forwarder.makeRequest(properties, ip, port, "find_successor", 0, 0, 0);
@@ -142,10 +148,12 @@ public class Node {
     }
 
     private void startThreads() {
+        highestNodeThread = Executors.newSingleThreadScheduledExecutor();
         checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
         stabilizeThread = Executors.newSingleThreadScheduledExecutor();
 
+        highestNodeThread.scheduleAtFixedRate(highestNode, 0, 1, TimeUnit.SECONDS);
         checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, 6, TimeUnit.SECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 2, 6, TimeUnit.SECONDS);
         stabilizeThread.scheduleAtFixedRate(stabilize, 4, 8, TimeUnit.SECONDS);
@@ -180,47 +188,27 @@ public class Node {
      */
     public void findSuccessor(NodeProperties askingNode) {
 
-        if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId()) && askingNode.equals(properties)) {
-            System.out.println("Found------------------------------------------------");
-            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+        //If it's not the highest node in the net
+        if (!highestNode.isHighestNode() && askingNode.getNodeId() <= properties.getNodeId()) {
+
+            //If the node is between the current node and its successor
+            if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
+                System.out.println("Found------------------------------------------------");
+                forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+            } else {
+                System.out.println("Forward----------------------------------------------");
+                NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
+
+                //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
+                if (!newNodeToAsk.equals(properties))
+                    forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
+                else
+                    forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+            }
         } else {
-            System.out.println("Forward----------------------------------------------");
-            NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
-            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
-        }
-
-        /*
-        ------|node|----------|successor|---
-        ---|asking|---|asking|-----
-
-        TODO Don't know if it will ever happen
-
-        if (askingNode.getNodeId() < properties.getNodeId()) {
-            System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
-            forwarder.makeRequest(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
-        }
-
-        ------|node|----------|successor|---
-        -------------|asking|-----
-
-        else if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
-            System.out.println("Found --------------------------------------------------------------------------------");
+            highestNode.setToFalse();
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
         }
-
-        ------|node|----------|last finger|--------------
-        ------------------------------------|asking|-----
-        TODO Correct?
-
-        else if (askingNode.getNodeId() > fingers[KEY_SIZE - 1].getNodeId()) {
-            System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            forwarder.makeRequest(fingers[KEY_SIZE - 1], askingNode.getIpAddress(), askingNode.getPort(), "find_successor", 0, 0, 0);
-        } else {
-            System.out.println("Forward ------------------------------------------------------------------------------");
-            NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
-            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
-        }
-        */
     }
 
     /**
@@ -237,6 +225,29 @@ public class Node {
         System.out.println("properties: " + properties.getNodeId());
         System.out.println("fingers: " + fingers[fixIndex].getNodeId());
 
+        //If it's not the highest node in the net
+        if (!highestNode.isHighestNode() && askingNode.getNodeId() <= properties.getNodeId()) {
+
+            //If the node is between the current node and its successor
+            if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
+                System.out.println("Found------------------------------------------------");
+                forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
+            } else {
+                System.out.println("Forward----------------------------------------------");
+                NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
+
+                //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
+                if (!newNodeToAsk.equals(properties))
+                    forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "fix_finger",  fixId, fixIndex, 0);
+                else
+                    forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply",  fixId, fixIndex, 0);
+            }
+        } else {
+            highestNode.setToFalse();
+            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply",  fixId, fixIndex, 0);
+        }
+
+        /*
         if (fixIndex > properties.getNodeId() && fixIndex <= fingers[0].getNodeId()) {
             System.out.println("ENTRA");
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
@@ -244,6 +255,8 @@ public class Node {
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
             forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "fix_finger", fixId, fixIndex, 0);
         }
+         */
+
     }
 
     /**
@@ -254,7 +267,7 @@ public class Node {
      */
     private NodeProperties closestPrecedingNode(int nodeId) {
         for (int i = KEY_SIZE - 1; i >= 0; i--) {
-            if (fingers[i].isInInterval(properties.getNodeId(), nodeId))
+            if (fingers[i] != null && fingers[i].isInInterval(properties.getNodeId(), nodeId))
                 return fingers[i];
         }
         return properties;
@@ -376,7 +389,8 @@ public class Node {
 
         System.out.println("Finger table of node " + properties.getNodeId());
         for (int j = 0; j < KEY_SIZE; j++) {
-            System.out.println(fingers[j].getNodeId());
+            if (fingers[j] != null)
+                System.out.println(fingers[j].getNodeId());
         }
     }
 

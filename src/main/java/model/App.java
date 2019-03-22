@@ -41,6 +41,14 @@ public class App {
                 case 2:
                 case 3:
                 case 4:
+                    System.out.println("Finger Table");
+                    for (int i = 0; i < KEY_SIZE - 1; i++) {
+                        if (node.getFingers()[i] != null)
+                            System.out.println(node.getFingers()[i].getNodeId());
+                        else
+                            System.out.println("-");
+                    }
+                    break;
                 case 5: // Look for a key
                     System.out.println("Insert the key you are looking for (it must be in the range [0," + KEY_SIZE + "]):");
                     int key = in.nextInt();
