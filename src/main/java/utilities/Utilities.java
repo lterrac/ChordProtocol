@@ -28,7 +28,7 @@ public class Utilities {
             MessageDigest msdDigest = MessageDigest.getInstance("SHA-1");
             msdDigest.update(text.getBytes("UTF-8"), 0, text.length());
             sha1 = DatatypeConverter.printHexBinary(msdDigest.digest());
-            return Integer.parseInt(new BigInteger(sha1, 16).toString(2).substring(0, KEY_SIZE - 1), 2);
+            return Integer.parseInt(new BigInteger(sha1, 16).mod(BigInteger.valueOf(KEY_SIZE)).toString(2), 2);
         }
         catch(Exception e)
         {
