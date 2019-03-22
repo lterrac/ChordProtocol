@@ -1,7 +1,5 @@
 package model;
 
-import sun.awt.AWTAccessor;
-
 /**
  * Veriﬁes n’s immediate successor, and tells the successor about n.
  */
@@ -17,8 +15,14 @@ public class Stabilize implements Runnable {
 
     @Override
     public void run() {
+
+        System.out.println("Executing Stabilize Thread");
+
         NodeProperties currentNode = node.getProperties();
         NodeProperties successor = node.getFingers()[0];
+
+        System.out.println("Current Node in Stabilize is:" +currentNode.getNodeId());
+        System.out.println("Successor Node in Stabilize is:" + successor.getNodeId());
 
         //Ask to the successor for its predecessor
         node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0);
@@ -26,9 +30,9 @@ public class Stabilize implements Runnable {
         //Wait for the response coming from the successor
         synchronized (this) {
 
-            //todo decide if a timeout is necessary!
+            //todo decide if a 6 seconds timeout is enough!
             try {
-                wait();
+                wait(5000);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 e.printStackTrace();
@@ -37,10 +41,11 @@ public class Stabilize implements Runnable {
         }
 
         //If the predecessor of the successor is not the current node, set the new successor of the current node
-        System.out.println("CI ARRIVA");
-        if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
+        if (successorPredecessor != null && successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
             node.setSuccessor(successorPredecessor);
+            System.out.println("Successor set in stabilize thread is: " + node.getFingers()[0].getNodeId());
         }
+
 
         //Inform the new successor that the current node might be its predecessor
         node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "notify", 0, 0, 0);

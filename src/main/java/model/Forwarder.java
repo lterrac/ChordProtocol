@@ -1,6 +1,7 @@
 package model;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.logging.Logger;
@@ -8,30 +9,37 @@ import java.util.logging.Logger;
 public class Forwarder {
     private static final Logger logger = Logger.getLogger(Forwarder.class.getName());
 
-    public void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey) {
+    private Socket clientSocket;
+    private ObjectOutputStream out;
+    private ObjectInputStream in;
 
-        Socket clientSocket;
-        ObjectOutputStream out;
-
-        /*
-            Note: Input Stream is useless, the response is redirected to
-            the RequestHandler
-         */
-
+    public synchronized void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey) {
 
         try {
             clientSocket = new Socket(ip, port);
             out = new ObjectOutputStream(clientSocket.getOutputStream());
+            in = new ObjectInputStream(clientSocket.getInputStream());
             Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey);
             out.writeObject(msg);
             out.flush();
+
+            close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Close the active connection
+     */
+    private void close() {
+        try {
             out.close();
+            in.close();
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
     }
 }
 

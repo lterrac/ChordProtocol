@@ -20,11 +20,12 @@ public class CheckPredecessor implements Runnable {
     @Override
     public void run() {
 
+        System.out.println("Executing Check Predecessor Thread");
+
         // Set the timer
         timer = new Timer();
         CheckPredecessorTimer task = new CheckPredecessorTimer(node);
         timer.schedule(task, NodeProperties.CHECK_TIME);
-
         node.checkPredecessor();
     }
 

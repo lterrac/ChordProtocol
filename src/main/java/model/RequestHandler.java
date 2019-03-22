@@ -88,6 +88,7 @@ public class RequestHandler implements Runnable {
                 break;
                 case "find_successor_reply": {
                     //Set the successor of the current node to the one received from the network
+                    System.out.println("The successor is " + msg.getProperties().getNodeId());
                     node.setSuccessor(msg.getProperties());
                 }
                 break;
@@ -95,7 +96,11 @@ public class RequestHandler implements Runnable {
                     //Send the predecessor of the current node to the one that asked for it
                     String receiverIp = msg.getProperties().getIpAddress();
                     int receiverPort = msg.getProperties().getPort();
-                    node.forward(node.getProperties(), receiverIp, receiverPort, "predecessor_reply", 0,0, 0);
+
+                    //TODO Check if it is the right behaviour
+                    if (node.isPredecessorSet())
+                        node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0,0, 0);
+
                 }
                 break;
                 case "predecessor_reply": {
@@ -117,7 +122,7 @@ public class RequestHandler implements Runnable {
             }
         } catch (EOFException | SocketException e) {
             if (!stop) {
-                System.out.print("EOF: ");
+                //System.out.print("EOF: ");
                 close();
             }
         } catch (IOException | ClassNotFoundException e) {
@@ -133,7 +138,7 @@ public class RequestHandler implements Runnable {
      * Method that closes ClientHandler connection
      */
     private void close() {
-        System.out.println("Closing down connection");
+        //System.out.println("Closing down connection");
         stop();
         if (out != null) {
             try {

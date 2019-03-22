@@ -72,9 +72,6 @@ public class Node {
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
 
-        checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
-        fixFingersThread = Executors.newSingleThreadScheduledExecutor();
-        stabilizeThread = Executors.newSingleThreadScheduledExecutor();
     }
 
     // Getter
@@ -99,20 +96,25 @@ public class Node {
      * Create a new Chord Ring
      */
     public void create() {
+
+        startNode();
+        startThreads();
+
+        new Thread(new NodeSocketServer(this)).start();
+    }
+
+    private void startNode() {
         serverSocket = createServerSocket();
         forwarder = new Forwarder();
         int port = serverSocket.getLocalPort();
         String ipAddress = getCurrentIp();
 
-        System.out.println("The IP of this node is : " + ipAddress);
-        System.out.println("The server is active on port " + port);
-
-        //Create node information
         initializeNode(ipAddress, port);
 
-        startThreads();
+        System.out.println("The IP of this node is : " + ipAddress);
+        System.out.println("The server is active on port " + port);
+        System.out.println("The ID of the node is: " + getProperties().getNodeId());
 
-        new Thread(new NodeSocketServer(this)).start();
     }
 
     private void initializeNode(String ipAddress, int port) {
@@ -129,15 +131,7 @@ public class Node {
      */
     public void join(String ip, int port) {
 
-        serverSocket = createServerSocket();
-        forwarder = new Forwarder();
-        int newPort = serverSocket.getLocalPort();
-        String newIp = getCurrentIp();
-
-        System.out.println("The IP of this node is : " + newIp);
-        System.out.println("The server is active on port " + newPort);
-
-        initializeNode(newIp, newPort);
+        startNode();
 
         forwarder.makeRequest(properties, ip, port, "find_successor", 0, 0, 0);
 
@@ -147,9 +141,13 @@ public class Node {
     }
 
     private void startThreads() {
+        checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
+        fixFingersThread = Executors.newSingleThreadScheduledExecutor();
+        stabilizeThread = Executors.newSingleThreadScheduledExecutor();
+
         checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, 6, TimeUnit.SECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 2, 6, TimeUnit.SECONDS);
-        stabilizeThread.scheduleAtFixedRate(stabilize, 4, 6, TimeUnit.SECONDS);
+        stabilizeThread.scheduleAtFixedRate(stabilize, 4, 8, TimeUnit.SECONDS);
     }
 
     /**
@@ -177,18 +175,34 @@ public class Node {
     /**
      * Find the successor of the node with the given id
      *
-     * @param askingNode is the
+     * @param askingNode is the node that asked for findings its successor
      */
     public void findSuccessor(NodeProperties askingNode) {
+
+        /*
+        ------|node|----------|successor|---
+        ---|asking|---|asking|-----
+        */
         if (askingNode.getNodeId() < properties.getNodeId()) {
             System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
             forwarder.makeRequest(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
-        } else if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
+        }
+        /*
+        ------|node|----------|successor|---
+        -------------|asking|-----
+         */
+        else if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
             System.out.println("Found --------------------------------------------------------------------------------");
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
-        } else if (askingNode.getNodeId() > fingers[KEY_SIZE - 1].getNodeId()) {
+        }
+        /*
+        ------|node|----------|last finger|--------------
+        ------------------------------------|asking|-----
+        TODO Correct?
+        */
+        else if (askingNode.getNodeId() > fingers[KEY_SIZE - 1].getNodeId()) {
             System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
-            forwarder.makeRequest(fingers[KEY_SIZE - 1], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+            forwarder.makeRequest(fingers[KEY_SIZE - 1], askingNode.getIpAddress(), askingNode.getPort(), "find_successor", 0, 0, 0);
         } else {
             System.out.println("Forward ------------------------------------------------------------------------------");
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
@@ -200,16 +214,17 @@ public class Node {
      * Find the successor of the the askingNode to update its finger table
      *
      * @param askingNode is the node that has sent the first fix_finger request
-     * @param fixIndex   is the index of the finger table to be updated
      * @param fixId      is the upper bound Id of the fixIndex-th row of the finger table
+     * @param fixIndex   is the index of the finger table to be updated
      */
     public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
         System.out.println("fixIndex: " + fixIndex);
         System.out.println("fixId: " + fixId);
         System.out.println("properties: " + properties.getNodeId());
-        System.out.println("fingers: " + fingers[0].getNodeId());
-        if (fixIndex >= properties.getNodeId() && fixIndex <= fingers[0].getNodeId()) {
+        System.out.println("fingers: " + fingers[fixIndex].getNodeId());
+
+        if (fixIndex > properties.getNodeId() && fixIndex <= fingers[0].getNodeId()) {
             System.out.println("ENTRA");
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
         } else {
@@ -328,12 +343,10 @@ public class Node {
      * @return the index of the finger table to be used during the fix_finger algorithm
      */
     public int nextFinger() {
-        if (n_fix == KEY_SIZE - 1) {
-
+        if (n_fix == KEY_SIZE - 1)
             n_fix = 0;
-        } else {
+        else
             n_fix += 1;
-        }
         return n_fix;
     }
 
@@ -355,7 +368,15 @@ public class Node {
     }
 
     public void checkPredecessor() {
-        forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0);
+        if (predecessor != null) {
+            System.out.println("Predecessor is " + predecessor.getNodeId());
+            forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0);
+            checkPredecessor.cancelTimer();
+        }
+    }
+
+    public boolean isPredecessorSet() {
+        return predecessor != null;
     }
 }
 

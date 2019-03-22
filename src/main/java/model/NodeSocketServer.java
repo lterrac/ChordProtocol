@@ -32,7 +32,7 @@ public class NodeSocketServer implements Runnable {
 
             try {
                 client = node.getServerSocket().accept();
-                System.out.println("New connection from -> " + client.getRemoteSocketAddress());
+                //System.out.println("New connection from -> " + client.getRemoteSocketAddress());
                 pool.submit(new RequestHandler(client, node));
             } catch (IOException e) {
                 e.printStackTrace();
