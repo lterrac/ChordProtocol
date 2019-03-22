@@ -44,4 +44,17 @@ public class NodeProperties implements Serializable {
     }
 
     public boolean isInIntervalStrict(int min, int max) { return nodeId > min && nodeId < max; }
+
+    /**
+     * Check if the two NodeProperties have the same ID
+     * @param obj Node to compare with this
+     * @return
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof NodeProperties) {
+            NodeProperties node = (NodeProperties) obj;
+            return nodeId == node.getNodeId();
+        } else return false;
+    }
 }

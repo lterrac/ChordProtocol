@@ -40,6 +40,7 @@ public class Node {
      * List of adjacent successors of the node
      */
     private List<NodeProperties> successors;
+
     /**
      * Scheduled executor to run threads at regular time intervals
      */
@@ -179,27 +180,38 @@ public class Node {
      */
     public void findSuccessor(NodeProperties askingNode) {
 
+        if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId()) && askingNode.equals(properties)) {
+            System.out.println("Found------------------------------------------------");
+            forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+        } else {
+            System.out.println("Forward----------------------------------------------");
+            NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
+            forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
+        }
+
         /*
         ------|node|----------|successor|---
         ---|asking|---|asking|-----
-        */
+
+        TODO Don't know if it will ever happen
+
         if (askingNode.getNodeId() < properties.getNodeId()) {
             System.out.println("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<");
             forwarder.makeRequest(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
         }
-        /*
+
         ------|node|----------|successor|---
         -------------|asking|-----
-         */
+
         else if (askingNode.isInInterval(properties.getNodeId(), fingers[0].getNodeId())) {
             System.out.println("Found --------------------------------------------------------------------------------");
             forwarder.makeRequest(fingers[0], askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
         }
-        /*
+
         ------|node|----------|last finger|--------------
         ------------------------------------|asking|-----
         TODO Correct?
-        */
+
         else if (askingNode.getNodeId() > fingers[KEY_SIZE - 1].getNodeId()) {
             System.out.println(">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>");
             forwarder.makeRequest(fingers[KEY_SIZE - 1], askingNode.getIpAddress(), askingNode.getPort(), "find_successor", 0, 0, 0);
@@ -208,6 +220,7 @@ public class Node {
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
             forwarder.makeRequest(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "find_successor", 0, 0, 0);
         }
+        */
     }
 
     /**
