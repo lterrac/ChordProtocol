@@ -17,7 +17,7 @@ public class FixFingers implements Runnable {
         System.out.println("Executing Fix Fingers Thread");
 
         int fixIndex = node.nextFinger();
-        int fixId = node.getProperties().getNodeId() + (int)Math.pow(2, fixIndex - 1);
+        int fixId = node.getProperties().getNodeId() + (int) Math.pow(2, fixIndex);
 
 
         node.fixFingerSuccessor(node.getProperties(), fixId, fixIndex);

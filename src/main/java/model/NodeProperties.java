@@ -2,10 +2,13 @@ package model;
 
 import java.io.Serializable;
 
+/**
+ * Wraps the properties of the node
+ */
 public class NodeProperties implements Serializable {
 
-    public static final int KEY_SIZE = 8; // size of the keys
-    public static final int CHECK_TIME = 20000; // waiting time for the checkPredecessor request
+    public static final int KEY_SIZE = 4; // size of the keys
+    static final int CHECK_TIME = 20000; // waiting time for the checkPredecessor request
 
     private final int nodeId;
     private String ipAddress;
@@ -17,53 +20,58 @@ public class NodeProperties implements Serializable {
         this.port = port;
     }
 
-    public String getIpAddress() {
+    String getIpAddress() { return ipAddress; }
 
-        return ipAddress;
-    }
+    int getPort() { return port; }
 
-    public int getPort() {
+    int getNodeId() { return nodeId; }
 
-        return port;
-    }
-
-    public int getNodeId() {
-        return nodeId;
-    }
-
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public boolean isInInterval(int min, int max) {
-        if (min < max)
-            return nodeId > min && nodeId <= max;
+    /**
+     * Check if the node id is in the interval between (firstBound, secondBound]
+     * @param firstBound the first bound
+     * @param secondBound the second bound
+     * @return true if the node id is in the interval
+     */
+    boolean isInInterval(int firstBound, int secondBound) {
+        if (firstBound < secondBound)
+            return nodeId > firstBound && nodeId <= secondBound;
         else
-            return nodeId > min || nodeId <= max;
+            return nodeId > firstBound || nodeId <= secondBound;
     }
 
-    public static boolean isInIntervalInteger(int min, int value, int max) {
-        if (min < max)
-            return value > min && value <= max;
+    /**
+     * Check if the node id is in the interval between (firstBound, secondBound)
+     * @param firstBound the first bound
+     * @param secondBound the second bound
+     * @return true if the node id is in the interval
+     */
+    boolean isInIntervalStrict(int firstBound, int secondBound) {
+        if (firstBound < secondBound)
+            return nodeId > firstBound && nodeId < secondBound;
         else
-            return value > min || value <= max;
+            return nodeId > firstBound || nodeId < secondBound;
     }
 
-
-    public boolean isInIntervalStrict(int min, int max) {
-        if (min < max)
-            return nodeId > min && nodeId < max;
+    /**
+     * Check if the value is in the interval between (firstBound, secondBound]
+     * @param firstBound the first bound
+     * @param value the value to check
+     * @param secondBound the second bound
+     * @return true if the value is in the interval
+     */
+    static boolean isInIntervalInteger(int firstBound, int value, int secondBound) {
+        if (firstBound < secondBound)
+            return value > firstBound && value <= secondBound;
         else
-            return nodeId > min || nodeId < max;
+            return value > firstBound || value <= secondBound;
     }
+
+
     /**
      * Check if the two NodeProperties have the same ID
+     *
      * @param obj Node to compare with this
-     * @return
+     * @return true if the objects have the same node id
      */
     @Override
     public boolean equals(Object obj) {

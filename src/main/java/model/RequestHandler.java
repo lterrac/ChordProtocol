@@ -118,7 +118,7 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 default:
-                    logger.log(Level.WARNING, "This request doesn't exist");
+                    System.out.println( "This request doesn't exist");
             }
         } catch (EOFException | SocketException e) {
             if (!stop) {

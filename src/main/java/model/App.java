@@ -1,10 +1,13 @@
 package model;
 
 import java.util.Scanner;
+import java.util.logging.Logger;
 
 import static model.NodeProperties.KEY_SIZE;
 
 public class App {
+
+    private static final Logger logger = Logger.getLogger(App.class.getName());
 
     public static void main(String[] args) {
 
@@ -24,7 +27,7 @@ public class App {
             int knownPort = Integer.parseInt(parts[1]);
 
             System.out.println(knownIp);
-            System.out.println(knownPort);
+            System.out.println( String.valueOf(knownPort));
 
             node = new Node();
             node.join(knownIp, knownPort);
@@ -44,7 +47,7 @@ public class App {
                     System.out.println("Finger Table");
                     for (int i = 0; i < KEY_SIZE - 1; i++) {
                         if (node.getFingers()[i] != null)
-                            System.out.println(node.getFingers()[i].getNodeId());
+                            System.out.println( String.valueOf(node.getFingers()[i].getNodeId()));
                         else
                             System.out.println("-");
                     }
@@ -63,7 +66,7 @@ public class App {
                     // Burn the newline character
                     in.nextLine();
 
-                    System.out.println("Insert ip and port (\"IP\":\"port\") of the node you want to reach:");
+                    System.out.println( "Insert ip and port (\"IP\":\"port\") of the node you want to reach:");
                     String address = in.nextLine();
                     String[] parts = address.split(":");
                     String ip = parts[0];
@@ -71,12 +74,12 @@ public class App {
                     node.forward(node.getProperties(), ip, port, "ping", 0, 0, 0);
                     break;
                 case 0: // Leave the network
-                    System.out.println("The node has left the network!");
+                    System.out.println( "The node has left the network!");
                     // TODO: without this the process is kept alive
                     System.exit(0);
                     break;
                 default:
-                    System.out.println("Invalid choice! Try again...");
+                    System.out.println( "Invalid choice! Try again...");
             }
         } while (action != 0);
     }

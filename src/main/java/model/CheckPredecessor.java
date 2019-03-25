@@ -22,12 +22,12 @@ public class CheckPredecessor implements Runnable {
 
         System.out.println("Executing CheckPredecessor");
 
+        node.checkPredecessor();
+
         // Set the timer
         timer = new Timer();
         CheckPredecessorTimer task = new CheckPredecessorTimer(node);
         timer.schedule(task, NodeProperties.CHECK_TIME);
-
-        node.checkPredecessor();
     }
 
     public void cancelTimer(){

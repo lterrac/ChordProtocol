@@ -10,6 +10,8 @@ public class Stabilize implements Runnable {
     private final Node node;
     private NodeProperties successorPredecessor;
     private Timer timer;
+    private NodeProperties currentNode;
+    private NodeProperties successor;
 
 
     public Stabilize(Node node) {
@@ -21,8 +23,8 @@ public class Stabilize implements Runnable {
 
         System.out.println("Executing Stabilize Thread");
 
-        NodeProperties currentNode = node.getProperties();
-        NodeProperties successor = node.successor();
+        currentNode = node.getProperties();
+        successor = node.successor();
 
         System.out.println("Current Node in Stabilize is:" +currentNode.getNodeId());
         System.out.println("Successor Node in Stabilize is:" + successor.getNodeId());
@@ -30,15 +32,15 @@ public class Stabilize implements Runnable {
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
             node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0);
-
+/*
             //Wait for the response coming from the successor
             timer = new Timer();
             StabilizeTimer task = new StabilizeTimer(currentNode, successor, successorPredecessor, node);
             timer.schedule(task, NodeProperties.CHECK_TIME);
-
+*/
         } else {
             if (node.isPredecessorSet()) {
-                setSuccessorPredecessor(node.getPredecessor());
+                this.successorPredecessor = node.getPredecessor();
                 node.setSuccessor(successorPredecessor);
                 System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
             }
@@ -51,6 +53,14 @@ public class Stabilize implements Runnable {
 
     public void setSuccessorPredecessor(NodeProperties successorPredecessor) {
         this.successorPredecessor = successorPredecessor;
+
+        System.out.println("                                                new successorPredecessor is" + successorPredecessor.getNodeId());
+
+        //If the predecessor of the successor is not the current node, set the new successor of the current node
+        if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
+            node.setSuccessor(successorPredecessor);
+            System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
+        }
     }
 
     public void cancelTimer() {
