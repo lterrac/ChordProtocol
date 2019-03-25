@@ -31,8 +31,7 @@ public class CheckPredecessor implements Runnable {
     }
 
     public void cancelTimer(){
-        if(timer != null ){
-            timer.cancel();
-        }
+        System.out.println("delete timer");
+        timer.cancel();
     }
 }

@@ -5,7 +5,7 @@ import java.io.Serializable;
 public class NodeProperties implements Serializable {
 
     public static final int KEY_SIZE = 8; // size of the keys
-    public static final int CHECK_TIME = 6000; // waiting time for the checkPredecessor request
+    public static final int CHECK_TIME = 20000; // waiting time for the checkPredecessor request
 
     private final int nodeId;
     private String ipAddress;
@@ -43,19 +43,23 @@ public class NodeProperties implements Serializable {
         if (min < max)
             return nodeId > min && nodeId <= max;
         else
-            return (this.isInIntervalStrict(min, (int) Math.pow(2, KEY_SIZE))) || (this.isInIntervalStrict(-1, max));
+            return nodeId > min || nodeId <= max;
     }
 
     public static boolean isInIntervalInteger(int min, int value, int max) {
         if (min < max)
             return value > min && value <= max;
         else
-            return (min > value && value < (int) Math.pow(2, KEY_SIZE)) || (-1 > value && value > max);
+            return value > min || value <= max;
     }
 
 
-    public boolean isInIntervalStrict(int min, int max) { return nodeId > min && nodeId < max; }
-
+    public boolean isInIntervalStrict(int min, int max) {
+        if (min < max)
+            return nodeId > min && nodeId < max;
+        else
+            return nodeId > min || nodeId < max;
+    }
     /**
      * Check if the two NodeProperties have the same ID
      * @param obj Node to compare with this
