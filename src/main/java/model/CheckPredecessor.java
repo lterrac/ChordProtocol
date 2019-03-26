@@ -10,7 +10,7 @@ public class CheckPredecessor implements Runnable {
     private Node node;
     private Timer timer;
 
-    public CheckPredecessor(Node node){
+    public CheckPredecessor(Node node) {
         this.node = node;
     }
 
@@ -20,8 +20,6 @@ public class CheckPredecessor implements Runnable {
     @Override
     public void run() {
 
-        System.out.println("Executing CheckPredecessor");
-
         node.checkPredecessor();
 
         // Set the timer
@@ -30,8 +28,7 @@ public class CheckPredecessor implements Runnable {
         timer.schedule(task, NodeProperties.CHECK_TIME);
     }
 
-    public void cancelTimer(){
-        System.out.println("delete timer");
+    public void cancelTimer() {
         timer.cancel();
     }
 }

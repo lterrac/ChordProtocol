@@ -21,13 +21,11 @@ public class Stabilize implements Runnable {
     @Override
     public void run() {
 
-        System.out.println("Executing Stabilize Thread");
-
         currentNode = node.getProperties();
         successor = node.successor();
 
-        System.out.println("Current Node in Stabilize is:" +currentNode.getNodeId());
-        System.out.println("Successor Node in Stabilize is:" + successor.getNodeId());
+        // System.out.println("Current Node in Stabilize is:" + currentNode.getNodeId());
+        // System.out.println("Successor Node in Stabilize is:" + successor.getNodeId());
 
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
@@ -42,7 +40,7 @@ public class Stabilize implements Runnable {
             if (node.isPredecessorSet()) {
                 this.successorPredecessor = node.getPredecessor();
                 node.setSuccessor(successorPredecessor);
-                System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
+                // System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
             }
         }
 
@@ -54,12 +52,12 @@ public class Stabilize implements Runnable {
     public void setSuccessorPredecessor(NodeProperties successorPredecessor) {
         this.successorPredecessor = successorPredecessor;
 
-        System.out.println("                                                new successorPredecessor is" + successorPredecessor.getNodeId());
+        // System.out.println("                                                new successorPredecessor is" + successorPredecessor.getNodeId());
 
         //If the predecessor of the successor is not the current node, set the new successor of the current node
         if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
             node.setSuccessor(successorPredecessor);
-            System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
+            // System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
         }
     }
 

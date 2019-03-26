@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static model.NodeProperties.KEY_SIZE;
@@ -116,7 +117,7 @@ public class Node {
         try {
             currentIp = InetAddress.getLocalHost();
         } catch (UnknownHostException e) {
-            System.out.println( e.getMessage());
+            System.out.println(e.getMessage());
         }
 
         assert currentIp != null;
@@ -154,7 +155,7 @@ public class Node {
         try {
             serverSocket = new ServerSocket(0);
         } catch (IOException e) {
-            System.out.println( e.getMessage());
+            System.out.println(e.getMessage());
         }
 
         return serverSocket;
@@ -190,11 +191,6 @@ public class Node {
         String ipAddress = getCurrentIp();
 
         initializeNode(ipAddress, port);
-
-        System.out.println("The IP of this node is : " + ipAddress);
-        System.out.println("The server is active on port " + port);
-        System.out.println("The ID of the node is: " + getProperties().getNodeId());
-
     }
 
     private void initializeNode(String ipAddress, int port) {
@@ -226,7 +222,6 @@ public class Node {
      * @param predecessor node that could be the predecessor
      */
     void notifySuccessor(NodeProperties predecessor) {
-        System.out.println("notify successor msg");
         if ((this.predecessor == null || predecessor.isInIntervalStrict(this.predecessor.getNodeId(), properties.getNodeId()))
                 && !predecessor.equals(properties)) {
             setPredecessor(predecessor);
@@ -242,14 +237,11 @@ public class Node {
     void findSuccessor(NodeProperties askingNode) {
 
         if (askingNode.getNodeId() == properties.getNodeId())
-            System.out.println( "DHT incosistenti");
-
+            logger.log(Level.SEVERE, "inconsistency: two nodes with the same ID");
 
         if (askingNode.isInInterval(properties.getNodeId(), successor().getNodeId())) {
-            System.out.println("----Found----");
             forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
         } else {
-            System.out.println("----Forward----");
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
@@ -287,27 +279,15 @@ public class Node {
      */
     void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
-        System.out.println("properties: " + properties.getNodeId());
-        System.out.println("fixId: " + fixId);
-        System.out.println("fixIndex: " + fixIndex);
-        System.out.println("bound to cover ");
-        System.out.println("finger 0: " + successor().getNodeId());
-        // System.out.println("fingers: " + fingers[fixIndex].getNodeId());
-
-
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
-            System.out.println("Found------------------------------------------------");
             forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
         } else {
-            System.out.println("Forward----------------------------------------------");
             NodeProperties newNodeToAsk = closestPrecedingNode(askingNode.getNodeId());
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!newNodeToAsk.equals(properties)) {
-                System.out.println("secondo if");
                 forward(askingNode, newNodeToAsk.getIpAddress(), newNodeToAsk.getPort(), "fix_finger", fixId, fixIndex, 0);
             } else {
-                System.out.println("secondo else");
                 forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
             }
         }
@@ -385,10 +365,10 @@ public class Node {
      * Forward a request to a client
      *
      * @param targetNode is the {@code NodeProperties} information
-     * @param ip       is the Ip address of the client to which to forward the request
-     * @param port     is the port of the client to which to forward the request
-     * @param msg      is the kind of request
-     * @param key      is the hash of the key to search on the net
+     * @param ip         is the Ip address of the client to which to forward the request
+     * @param port       is the port of the client to which to forward the request
+     * @param msg        is the kind of request
+     * @param key        is the hash of the key to search on the net
      */
     void forward(NodeProperties targetNode, String ip, int port, String msg, int fixId, int fixIndex, int key) {
         forwarder.makeRequest(targetNode, ip, port, msg, fixId, fixIndex, key);
@@ -414,28 +394,68 @@ public class Node {
      * @param newNode is the new value for the row with index i in the table
      */
     void updateFinger(int i, NodeProperties newNode) {
-
         // TODO: synchronized?
         fingers[i] = newNode;
-
-        System.out.println("Finger table of node " + properties.getNodeId());
-        for (int j = 0; j < KEY_SIZE; j++) {
-            if (fingers[j] != null) {
-            }
-            // System.out.println(fingers[j].getNodeId());
-        }
     }
 
     void checkPredecessor() {
         if (predecessor != null) {
-            System.out.println("Predecessor is " + predecessor.getNodeId());
             forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0);
-        } else
-            System.out.println("Predecessor is null");
+        }
     }
 
     boolean isPredecessorSet() {
         return predecessor != null;
+    }
+
+    void printServerCoordinates() {
+        System.out.println("Server coordinates:");
+        System.out.println("ID: " + properties.getNodeId());
+        System.out.println("Ip: " + properties.getIpAddress());
+        System.out.println("Port: " + properties.getPort());
+
+        System.out.println("------------------------------------------\n");
+    }
+
+    void printFingerTable() {
+        System.out.println("Finger table node id " + properties.getNodeId() + ":");
+        for (int i = 0; i < KEY_SIZE; i++) {
+            if (fingers[i] != null)
+                System.out.println(String.valueOf(fingers[i].getNodeId()));
+            else
+                System.out.println("-");
+        }
+
+        System.out.println("------------------------------------------\n");
+    }
+
+    void printPredecessorAndSuccessor() {
+        if (predecessor != null) {
+            System.out.println("Predecessor coordinates:");
+            System.out.println("ID: " + predecessor.getNodeId());
+            System.out.println("Ip: " + predecessor.getIpAddress());
+            System.out.println("Port: " + predecessor.getPort());
+            System.out.println();
+        }
+
+        if (fingers[0] != null) {
+            System.out.println("Successor coordinates:");
+            System.out.println("ID: " + fingers[0].getNodeId());
+            System.out.println("Ip: " + fingers[0].getIpAddress());
+            System.out.println("Port: " + fingers[0].getPort());
+        }
+        
+        System.out.println("------------------------------------------\n");
+    }
+
+    void printResources() {
+        System.out.println("List of resources' keys contained by node " + properties.getNodeId() + ":");
+
+        for (int resource : data.keySet()) {
+            System.out.println(resource + ": " + data.get(resource).toString());
+        }
+
+        System.out.println("------------------------------------------\n");
     }
 }
 

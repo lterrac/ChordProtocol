@@ -20,15 +20,37 @@ public class NodeProperties implements Serializable {
         this.port = port;
     }
 
-    String getIpAddress() { return ipAddress; }
+    /**
+     * Check if the value is in the interval between (firstBound, secondBound]
+     *
+     * @param firstBound  the first bound
+     * @param value       the value to check
+     * @param secondBound the second bound
+     * @return true if the value is in the interval
+     */
+    static boolean isInIntervalInteger(int firstBound, int value, int secondBound) {
+        if (firstBound < secondBound)
+            return value > firstBound && value <= secondBound;
+        else
+            return value > firstBound || value <= secondBound;
+    }
 
-    int getPort() { return port; }
+    String getIpAddress() {
+        return ipAddress;
+    }
 
-    int getNodeId() { return nodeId; }
+    int getPort() {
+        return port;
+    }
+
+    int getNodeId() {
+        return nodeId;
+    }
 
     /**
      * Check if the node id is in the interval between (firstBound, secondBound]
-     * @param firstBound the first bound
+     *
+     * @param firstBound  the first bound
      * @param secondBound the second bound
      * @return true if the node id is in the interval
      */
@@ -41,7 +63,8 @@ public class NodeProperties implements Serializable {
 
     /**
      * Check if the node id is in the interval between (firstBound, secondBound)
-     * @param firstBound the first bound
+     *
+     * @param firstBound  the first bound
      * @param secondBound the second bound
      * @return true if the node id is in the interval
      */
@@ -51,21 +74,6 @@ public class NodeProperties implements Serializable {
         else
             return nodeId > firstBound || nodeId < secondBound;
     }
-
-    /**
-     * Check if the value is in the interval between (firstBound, secondBound]
-     * @param firstBound the first bound
-     * @param value the value to check
-     * @param secondBound the second bound
-     * @return true if the value is in the interval
-     */
-    static boolean isInIntervalInteger(int firstBound, int value, int secondBound) {
-        if (firstBound < secondBound)
-            return value > firstBound && value <= secondBound;
-        else
-            return value > firstBound || value <= secondBound;
-    }
-
 
     /**
      * Check if the two NodeProperties have the same ID

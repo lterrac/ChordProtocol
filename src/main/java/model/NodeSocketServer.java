@@ -11,10 +11,9 @@ import java.util.logging.Logger;
 public class NodeSocketServer implements Runnable {
 
     private static final Logger logger = Logger.getLogger(NodeSocketServer.class.getName());
-
-    private Node node;
     private final ServerSocket serverSocket;
     private final ExecutorService pool;
+    private Node node;
     private boolean stop;
 
     public NodeSocketServer(Node node) {
@@ -32,7 +31,6 @@ public class NodeSocketServer implements Runnable {
 
             try {
                 client = node.getServerSocket().accept();
-                //System.out.println("New connection from -> " + client.getRemoteSocketAddress());
                 pool.submit(new RequestHandler(client, node));
             } catch (IOException e) {
                 e.printStackTrace();

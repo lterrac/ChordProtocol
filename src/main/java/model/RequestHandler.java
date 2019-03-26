@@ -55,17 +55,18 @@ public class RequestHandler implements Runnable {
                 case "ping": {
                     String senderIp = msg.getProperties().getIpAddress();
                     int senderPort = msg.getProperties().getPort();
-                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply",0, 0, 0);
+                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply", 0, 0, 0);
                 }
                 break;
                 case "ping_reply": {
                     System.out.println("Ping message received from node " + msg.getProperties().getNodeId());
+                    System.out.println("------------------------------------------\n");
                 }
                 break;
                 case "check_predecessor": {
                     String senderIp = msg.getProperties().getIpAddress();
                     int senderPort = msg.getProperties().getPort();
-                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply", 0,0, 0);
+                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply", 0, 0, 0);
                 }
                 break;
                 case "check_predecessor_reply": {
@@ -88,7 +89,6 @@ public class RequestHandler implements Runnable {
                 break;
                 case "find_successor_reply": {
                     //Set the successor of the current node to the one received from the network
-                    System.out.println("The successor is " + msg.getProperties().getNodeId());
                     node.setSuccessor(msg.getProperties());
                 }
                 break;
@@ -99,7 +99,7 @@ public class RequestHandler implements Runnable {
 
                     //TODO Check if it is the right behaviour
                     if (node.isPredecessorSet())
-                        node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0,0, 0);
+                        node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0);
 
                 }
                 break;
@@ -118,11 +118,10 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 default:
-                    System.out.println( "This request doesn't exist");
+                    logger.log(Level.SEVERE, "This request doesn't exist.");
             }
         } catch (EOFException | SocketException e) {
             if (!stop) {
-                //System.out.print("EOF: ");
                 close();
             }
         } catch (IOException | ClassNotFoundException e) {
@@ -138,7 +137,6 @@ public class RequestHandler implements Runnable {
      * Method that closes ClientHandler connection
      */
     private void close() {
-        //System.out.println("Closing down connection");
         stop();
         if (out != null) {
             try {

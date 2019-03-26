@@ -21,7 +21,7 @@ public class StabilizeTimer extends TimerTask {
         //If the predecessor of the successor is not the current node, set the new successor of the current node
         if (successorPredecessor != null && successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
             node.setSuccessor(successorPredecessor);
-            System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
+            //System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
         }
     }
 }
