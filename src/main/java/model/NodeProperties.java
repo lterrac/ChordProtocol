@@ -7,8 +7,10 @@ import java.io.Serializable;
  */
 public class NodeProperties implements Serializable {
 
-    public static final int KEY_SIZE = 4; // size of the keys
-    static final int CHECK_TIME = 20000; // waiting time for the checkPredecessor request
+    public static final int KEY_SIZE = 8; // size of the keys
+    static final int CHECK_PERIOD = 5000; // waiting time for the checkPredecessor request
+    static final int FIX_PERIOD = 5000; // fixFingers period
+    static final int STABILIZE_PERIOD = 5000; // stabilize period
 
     private final int nodeId;
     private String ipAddress;

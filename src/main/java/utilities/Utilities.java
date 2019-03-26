@@ -11,9 +11,6 @@ public class Utilities {
 
     /**
      * Example of SHA 1 -> uses m = 160 bit
-     *
-     * @param args
-     * @throws NoSuchAlgorithmException
      */
     public static void main(String[] args) throws NoSuchAlgorithmException {
         System.out.println(sha1("192.168.1.140:9001"));
@@ -27,7 +24,7 @@ public class Utilities {
 
     public static int sha1(String text) {
         try {
-            String sha1 = null;
+            String sha1;
             MessageDigest msdDigest = MessageDigest.getInstance("SHA-1");
             msdDigest.update(text.getBytes("UTF-8"), 0, text.length());
             sha1 = DatatypeConverter.printHexBinary(msdDigest.digest());

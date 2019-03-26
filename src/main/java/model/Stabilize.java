@@ -34,7 +34,7 @@ public class Stabilize implements Runnable {
             //Wait for the response coming from the successor
             timer = new Timer();
             StabilizeTimer task = new StabilizeTimer(currentNode, successor, successorPredecessor, node);
-            timer.schedule(task, NodeProperties.CHECK_TIME);
+            timer.schedule(task, NodeProperties.CHECK_PERIOD);
 */
         } else {
             if (node.isPredecessorSet()) {
