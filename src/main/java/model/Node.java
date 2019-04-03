@@ -65,7 +65,7 @@ public class Node {
     private int n_fix;
 
     public Node() {
-        n_fix = 0;
+        n_fix = -1;
         successors = new ArrayList<>();
         data = new HashMap<>();
 
@@ -129,8 +129,8 @@ public class Node {
      *
      * @param newNode is the node to be set as predecessor for the successor
      */
-    void setSuccessorPredecessor(NodeProperties newNode) {
-        stabilize.setSuccessorPredecessor(newNode);
+    void finalizeStabilize(NodeProperties newNode) {
+        stabilize.finalizeStabilize(newNode);
     }
 
     /**
@@ -212,8 +212,7 @@ public class Node {
      * @param predecessor node that could be the predecessor
      */
     void notifySuccessor(NodeProperties predecessor) {
-        if ((this.predecessor == null || predecessor.isInIntervalStrict(this.predecessor.getNodeId(), properties.getNodeId()))
-                && !predecessor.equals(properties)) {
+        if ((this.predecessor == null || predecessor.isInIntervalStrict(this.predecessor.getNodeId(), properties.getNodeId()))) {
             setPredecessor(predecessor);
         }
     }
@@ -251,10 +250,17 @@ public class Node {
      */
     void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
+        System.out.println("FFS askingNode: " + askingNode);
+        System.out.println("FFS askingNodeId: " + askingNode.getNodeId());
+        System.out.println("FFS fixId: " + fixId);
+        System.out.println("FFS fixIndex: " + fixIndex);
+
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
             forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
         } else {
-            NodeProperties closest = closestPrecedingNode(askingNode.getNodeId());
+            NodeProperties closest = closestPrecedingNode(fixId);
+
+            System.out.println("closest preceding id " + properties.getNodeId() + ": " + closest);
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties)) {
@@ -352,23 +358,34 @@ public class Node {
         System.out.println("ID: " + properties.getNodeId());
         System.out.println("Ip: " + properties.getIpAddress());
         System.out.println("Port: " + properties.getPort());
+        System.out.println("Coordinates: " + properties.getIpAddress() + ":" + properties.getPort());
 
         System.out.println("------------------------------------------\n");
     }
 
     void printFingerTable() {
+        int limit = (int) Math.pow(2, KEY_SIZE);
+        int bound;
         System.out.println("Finger table node id " + properties.getNodeId() + ":");
+        System.out.println("i\tvalue\tbound");
+
         for (int i = 0; i < KEY_SIZE; i++) {
-            if (fingers[i] != null)
-                System.out.println(String.valueOf(fingers[i].getNodeId()));
-            else
+            if (fingers[i] != null) {
+                bound = (int)(Math.pow(2, i) + properties.getNodeId())%limit;
+                System.out.println("[" + i + "]\t" + String.valueOf(fingers[i].getNodeId()) + "\t\t" + bound);
+            } else {
                 System.out.println("-");
+            }
         }
 
         System.out.println("------------------------------------------\n");
     }
 
     void printPredecessorAndSuccessor() {
+
+        System.out.println("Current node ID: " + properties.getNodeId());
+        System.out.println();
+
         if (predecessor != null) {
             System.out.println("Predecessor coordinates:");
             System.out.println("ID: " + predecessor.getNodeId());

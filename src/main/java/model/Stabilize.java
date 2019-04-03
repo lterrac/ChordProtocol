@@ -2,9 +2,6 @@ package model;
 
 import java.util.Timer;
 
-/**
- * Veriﬁes n’s immediate successor, and tells the successor about n.
- */
 public class Stabilize implements Runnable {
 
     private final Node node;
@@ -30,12 +27,7 @@ public class Stabilize implements Runnable {
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
             node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0);
-/*
-            //Wait for the response coming from the successor
-            timer = new Timer();
-            StabilizeTimer task = new StabilizeTimer(currentNode, successor, successorPredecessor, node);
-            timer.schedule(task, NodeProperties.CHECK_PERIOD);
-*/
+
         } else {
             if (node.isPredecessorSet()) {
                 this.successorPredecessor = node.getPredecessor();
@@ -45,11 +37,11 @@ public class Stabilize implements Runnable {
         }
 
         //Inform the new successor that the current node might be its predecessor
-        node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "notify", 0, 0, 0);
+        node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0);
 
     }
 
-    public void setSuccessorPredecessor(NodeProperties successorPredecessor) {
+    public void finalizeStabilize(NodeProperties successorPredecessor) {
         this.successorPredecessor = successorPredecessor;
 
         // System.out.println("                                                new successorPredecessor is" + successorPredecessor.getNodeId());
@@ -65,3 +57,42 @@ public class Stabilize implements Runnable {
         timer.cancel();
     }
 }
+/*
+
+package model;
+
+
+public class Stabilize implements Runnable {
+
+    private final Node node;
+
+    public Stabilize(Node node) {
+        this.node = node;
+    }
+
+    @Override
+    public void run() {
+
+        if (!node.successor().equals(node.getProperties())) {
+            //Ask to the successor for its predecessor
+            node.forward(node.getProperties(), node.successor().getIpAddress(), node.successor().getPort(), "predecessor", 0, 0, 0);
+
+        } else {
+            if (!node.isPredecessorSet()) {
+                node.setPredecessor(node.getProperties());
+            }
+        }
+    }
+
+    public void finalizeStabilize(NodeProperties successorPredecessor) {
+
+        //If the predecessor of the successor is not the current node, set the new successor of the current node
+        if (successorPredecessor.isInIntervalStrict(node.getProperties().getNodeId(), node.successor().getNodeId())) {
+            node.setSuccessor(successorPredecessor);
+        }
+        //Inform the new successor that the current node might be its predecessor
+        node.forward(node.getProperties(), node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0);
+    }
+
+}
+*/

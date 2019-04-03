@@ -106,7 +106,7 @@ public class RequestHandler implements Runnable {
                 case "predecessor_reply": {
                     //Once the predecessor is arrived, set it into the dedicated thread and call notify()
                     //todo Check if a synchronized block is necessary
-                    node.setSuccessorPredecessor(msg.getProperties());
+                    node.finalizeStabilize(msg.getProperties());
                 }
                 break;
                 case "lookup": {
