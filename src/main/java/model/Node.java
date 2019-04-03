@@ -4,18 +4,15 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static model.NodeProperties.*;
 import static utilities.Utilities.sha1;
 
@@ -291,6 +288,7 @@ public class Node {
      */
     void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
+
         /*System.out.println("FFS askingNode: " + askingNode);
         System.out.println("FFS askingNodeId: " + askingNode.getNodeId());
         System.out.println("FFS fixId: " + fixId);
@@ -328,15 +326,23 @@ public class Node {
 
 
     /**
-     * Look for the owner of a resource in the net
+     * Look for the owner of a resource in the net.
      *
      * @param key is the hash of the resource you're looking for in the net
-     * @return the Ip address of the node that contains the resource, otherwise null
      */
-    String lookup(int key) {
-        // TODO: implement
+    void lookup(NodeProperties askingNode, int key) {
 
-        return null;
+        if (key > properties.getNodeId() && successor().getNodeId() >= key) {
+            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0,null);
+        } else {
+            NodeProperties closest = closestPrecedingNode(key);
+
+            //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
+            if (!closest.equals(properties))
+                forward(askingNode, closest.getIpAddress(), closest.getPort(), "lookup", 0, 0, key,null);
+            else
+                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0,null);
+        }
     }
 
     public void transferFiles(File[] allFiles) throws IOException {
@@ -439,7 +445,7 @@ public class Node {
 
         for (int i = 0; i < KEY_SIZE; i++) {
             if (fingers[i] != null) {
-                bound = (int)(Math.pow(2, i) + properties.getNodeId())%limit;
+                bound = (int) (Math.pow(2, i) + properties.getNodeId()) % limit;
                 System.out.println("[" + i + "]\t" + String.valueOf(fingers[i].getNodeId()) + "\t\t" + bound);
             } else {
                 System.out.println("-");

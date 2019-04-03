@@ -122,7 +122,11 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 case "lookup": {
-                    node.lookup(msg.getKey());
+                    node.lookup(msg.getProperties(), msg.getKey());
+                }
+                break;
+                case "lookup_reply": {
+                    System.out.println("The resource " + msg.getKey() + " is contained by node " + msg.getProperties().getNodeId());
                 }
                 break;
                 case "notify": {
