@@ -26,7 +26,7 @@ public class Stabilize implements Runnable {
 
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
-            node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0);
+            node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0,null);
 
         } else {
             if (node.isPredecessorSet()) {
@@ -37,7 +37,7 @@ public class Stabilize implements Runnable {
         }
 
         //Inform the new successor that the current node might be its predecessor
-        node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0);
+        node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0,null);
 
     }
 

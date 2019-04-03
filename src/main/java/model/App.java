@@ -56,7 +56,7 @@ public class App {
                     break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
-                    System.exit(0);
+                    exit();
                     break;
                 default:
                     System.out.println("Invalid choice! Try again...");
@@ -85,7 +85,7 @@ public class App {
         if (parts.length == 2) {
             String ip = parts[0];
             port = Integer.parseInt(parts[1]);
-            node.forward(node.getProperties(), ip, port, "ping", 0, 0, 0);
+            node.forward(node.getProperties(), ip, port, "ping", 0, 0, 0,null);
         } else {
             System.out.println("Please check the correctness of the input and try again");
         }
@@ -102,5 +102,12 @@ public class App {
             System.out.println("The resource doesn't exist in the net.");
         }
         System.out.println("------------------------------------------\n");
+    }
+
+    private static void exit(){
+        boolean leaving=true;
+        node.distributeResources(leaving);
+        node.notifyNeighbours();
+        //System.exit(0);
     }
 }

@@ -55,7 +55,7 @@ public class RequestHandler implements Runnable {
                 case "ping": {
                     String senderIp = msg.getProperties().getIpAddress();
                     int senderPort = msg.getProperties().getPort();
-                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply", 0, 0, 0);
+                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply", 0, 0, 0, null);
                 }
                 break;
                 case "ping_reply": {
@@ -66,7 +66,7 @@ public class RequestHandler implements Runnable {
                 case "check_predecessor": {
                     String senderIp = msg.getProperties().getIpAddress();
                     int senderPort = msg.getProperties().getPort();
-                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply", 0, 0, 0);
+                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply", 0, 0, 0, null);
                 }
                 break;
                 case "check_predecessor_reply": {
@@ -99,7 +99,7 @@ public class RequestHandler implements Runnable {
 
                     //TODO Check if it is the right behaviour
                     if (node.isPredecessorSet())
-                        node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0);
+                        node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0, null);
 
                 }
                 break;
@@ -107,6 +107,18 @@ public class RequestHandler implements Runnable {
                     //Once the predecessor is arrived, set it into the dedicated thread and call notify()
                     //todo Check if a synchronized block is necessary
                     node.finalizeStabilize(msg.getProperties());
+                }
+                break;
+                case "transfer_files":{
+                    node.transferFiles(msg.getAllFiles());
+                }
+                break;
+                case "update_predecessor":{
+                    node.setPredecessor(msg.getProperties());
+                }
+                break;
+                case "update_successor":{
+                    node.setSuccessor(msg.getProperties());
                 }
                 break;
                 case "lookup": {

@@ -1,19 +1,21 @@
 package model;
 
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static model.NodeProperties.*;
 import static utilities.Utilities.sha1;
 
@@ -90,6 +92,7 @@ public class Node {
     // Setter
     public void setPredecessor(NodeProperties predecessor) {
         this.predecessor = predecessor;
+        //TODO:inviare al predecessore le risorse che spettano a lui
     }
 
     /**
@@ -157,6 +160,7 @@ public class Node {
     void create() {
 
         startNode();
+
         startThreads();
 
         new Thread(new NodeSocketServer(this)).start();
@@ -167,11 +171,11 @@ public class Node {
      */
     void join(String ip, int port) {
         startNode();
-        forward(properties, ip, port, "find_successor", 0, 0, 0);
+        forward(properties, ip, port, "find_successor", 0, 0, 0,null);
 
         startThreads();
         new Thread(new NodeSocketServer(this)).start();
-
+        distributeResources(false);
     }
 
     private void startNode() {
@@ -181,6 +185,7 @@ public class Node {
         String ipAddress = getCurrentIp();
 
         initializeNode(ipAddress, port);
+        createResources();
     }
 
     private void initializeNode(String ipAddress, int port) {
@@ -192,6 +197,42 @@ public class Node {
             fingers[i] = properties;
         }
 */
+    }
+
+    private void createResources()  {
+        for(int i=0;i<RESOURCESNUMBER;i++)
+        {
+
+            String filename= "File"+i;
+            File f = new File("./node"+this.getProperties().getNodeId()+"files/" +filename);
+            if (!f.getParentFile().exists())
+                f.getParentFile().mkdirs();
+            if (!f.exists()) {
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    public void distributeResources(boolean leaving) {
+        if (leaving==true){
+            File folder = new File("./node"+this.getProperties().getNodeId()+"files");
+            File[] allFiles = folder.listFiles();
+            forward(null,successor().getIpAddress(),successor().getPort(), "transfer_files", 0, 0, 0, allFiles);
+            for(int i = 0;i < RESOURCESNUMBER;i++)
+            {
+                File f = allFiles[i];
+                f.delete();
+            }
+        }
+    }
+
+    public void notifyNeighbours(){
+        forward(successor(),predecessor.getIpAddress(),predecessor.getPort(),"update_successor",0,0,0,null);
+        forward(getPredecessor(),successor().getIpAddress(),successor().getPort(),"update_predecessor",0,0,0,null);
     }
 
 
@@ -229,15 +270,15 @@ public class Node {
             logger.log(Level.SEVERE, "inconsistency: two nodes with the same ID");
 
         if (askingNode.isInInterval(properties.getNodeId(), successor().getNodeId())) {
-            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0,null);
         } else {
             NodeProperties closest = closestPrecedingNode(askingNode.getNodeId());
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties))
-                forward(askingNode, closest.getIpAddress(), closest.getPort(), "find_successor", 0, 0, 0);
+                forward(askingNode, closest.getIpAddress(), closest.getPort(), "find_successor", 0, 0, 0,null);
             else
-                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0);
+                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0,null);
         }
     }
 
@@ -250,23 +291,23 @@ public class Node {
      */
     void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
-        System.out.println("FFS askingNode: " + askingNode);
+        /*System.out.println("FFS askingNode: " + askingNode);
         System.out.println("FFS askingNodeId: " + askingNode.getNodeId());
         System.out.println("FFS fixId: " + fixId);
-        System.out.println("FFS fixIndex: " + fixIndex);
+        System.out.println("FFS fixIndex: " + fixIndex);*/
 
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
-            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
+            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0,null);
         } else {
             NodeProperties closest = closestPrecedingNode(fixId);
 
-            System.out.println("closest preceding id " + properties.getNodeId() + ": " + closest);
+            //System.out.println("closest preceding id " + properties.getNodeId() + ": " + closest);
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties)) {
-                forward(askingNode, closest.getIpAddress(), closest.getPort(), "fix_finger", fixId, fixIndex, 0);
+                forward(askingNode, closest.getIpAddress(), closest.getPort(), "fix_finger", fixId, fixIndex, 0,null);
             } else {
-                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
+                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0,null);
             }
         }
     }
@@ -298,6 +339,33 @@ public class Node {
         return null;
     }
 
+    public void transferFiles(File[] allFiles) throws IOException {
+        //System.out.println(allFiles.length);
+        for(int i=0; i<allFiles.length;i++){
+            File file=allFiles[i];
+            String name=file.getName();
+            FileInputStream in = null;
+            FileOutputStream out = null;
+            try {
+                in = new FileInputStream("./node"+this.getProperties().getNodeId()+"files/"+name);
+                out = new FileOutputStream("./node"+this.getProperties().getNodeId()+"files/" + name+"Distributed");
+                int c;
+                while ((c = in.read()) != -1) {
+                    out.write(c);
+                }
+            } finally {
+                if(in!=null) {
+                    in.close();
+                }
+                if(out!=null) {
+                    out.close();
+                }
+
+            }
+
+        }
+    }
+
 
     /**
      * Cancel the timer that has been set before sending the request to check if the predecessor is still alive
@@ -315,8 +383,8 @@ public class Node {
      * @param msg        is the kind of request
      * @param key        is the hash of the key to search on the net
      */
-    void forward(NodeProperties targetNode, String ip, int port, String msg, int fixId, int fixIndex, int key) {
-        forwarder.makeRequest(targetNode, ip, port, msg, fixId, fixIndex, key);
+    void forward(NodeProperties targetNode, String ip, int port, String msg, int fixId, int fixIndex, int key, File[] allFiles) {
+        forwarder.makeRequest(targetNode, ip, port, msg, fixId, fixIndex, key, allFiles);
     }
 
     /**
@@ -345,7 +413,7 @@ public class Node {
 
     void checkPredecessor() {
         if (predecessor != null) {
-            forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0);
+            forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0,null);
         }
     }
 

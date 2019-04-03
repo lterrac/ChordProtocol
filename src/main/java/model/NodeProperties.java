@@ -11,6 +11,7 @@ public class NodeProperties implements Serializable {
     static final int CHECK_PERIOD = 1000; // waiting time for the checkPredecessor request
     static final int FIX_PERIOD = 1000; // fixFingers period
     static final int STABILIZE_PERIOD = 1000; // stabilize period
+    static final int RESOURCESNUMBER = 10;
 
     private final int nodeId;
     private String ipAddress;

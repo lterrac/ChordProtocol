@@ -13,11 +13,11 @@ public class Utilities {
      * Example of SHA 1 -> uses m = 160 bit
      */
     public static void main(String[] args) throws NoSuchAlgorithmException {
-        System.out.println(sha1("192.168.1.140:9001"));
-        System.out.println(sha1("192.168.1.140:9002"));
-        System.out.println(sha1("192.168.1.140:9003"));
-        System.out.println(sha1("192.168.1.140:9004"));
-        System.out.println(sha1("192.168.1.140:9005"));
+        System.out.println(sha1("File0"));
+        System.out.println(sha1("File1"));
+        System.out.println(sha1("File2"));
+        System.out.println(sha1("File3"));
+        System.out.println(sha1("File4"));
         System.out.println((int) Math.pow(2, KEY_SIZE));
     }
 

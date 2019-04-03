@@ -1,9 +1,11 @@
 package model;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.List;
 import java.util.logging.Logger;
 
 public class Forwarder {
@@ -13,13 +15,13 @@ public class Forwarder {
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
-    public synchronized void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey) {
+    public synchronized void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey, File[] allFiles) {
 
         try {
             clientSocket = new Socket(ip, port);
             out = new ObjectOutputStream(clientSocket.getOutputStream());
             in = new ObjectInputStream(clientSocket.getInputStream());
-            Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey);
+            Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey, allFiles);
             out.writeObject(msg);
             out.flush();
 
