@@ -250,11 +250,6 @@ public class Node {
      */
     void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
-        System.out.println("FFS askingNode: " + askingNode);
-        System.out.println("FFS askingNodeId: " + askingNode.getNodeId());
-        System.out.println("FFS fixId: " + fixId);
-        System.out.println("FFS fixIndex: " + fixIndex);
-
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
             forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0);
         } else {
@@ -287,15 +282,23 @@ public class Node {
 
 
     /**
-     * Look for the owner of a resource in the net
+     * Look for the owner of a resource in the net.
      *
      * @param key is the hash of the resource you're looking for in the net
-     * @return the Ip address of the node that contains the resource, otherwise null
      */
-    String lookup(int key) {
-        // TODO: implement
+    void lookup(NodeProperties askingNode, int key) {
 
-        return null;
+        if (key > properties.getNodeId() && successor().getNodeId() >= key) {
+            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0);
+        } else {
+            NodeProperties closest = closestPrecedingNode(key);
+
+            //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
+            if (!closest.equals(properties))
+                forward(askingNode, closest.getIpAddress(), closest.getPort(), "lookup", 0, 0, key);
+            else
+                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0);
+        }
     }
 
 
@@ -371,7 +374,7 @@ public class Node {
 
         for (int i = 0; i < KEY_SIZE; i++) {
             if (fingers[i] != null) {
-                bound = (int)(Math.pow(2, i) + properties.getNodeId())%limit;
+                bound = (int) (Math.pow(2, i) + properties.getNodeId()) % limit;
                 System.out.println("[" + i + "]\t" + String.valueOf(fingers[i].getNodeId()) + "\t\t" + bound);
             } else {
                 System.out.println("-");

@@ -76,7 +76,7 @@ public class App {
     }
 
     private static void ping() {
-        int port = 0;
+        int port;
 
         System.out.println("Insert ip and port (\"IP\":\"port\") of the node you want to reach:");
         String address = stringScanner.nextLine();
@@ -95,12 +95,8 @@ public class App {
     private static void lookup() {
         System.out.println("Insert the key you are looking for (it must be in the range [0," + KEY_SIZE + "]):");
         int key = intScanner.nextInt();
-        String nodeIp = node.lookup(key);
-        if (nodeIp != null) {
-            System.out.println("The resource is kept by node " + nodeIp);
-        } else {
-            System.out.println("The resource doesn't exist in the net.");
-        }
+        node.lookup(node.getProperties(), key);
+
         System.out.println("------------------------------------------\n");
     }
 }
