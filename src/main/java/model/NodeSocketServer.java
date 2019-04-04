@@ -36,15 +36,17 @@ public class NodeSocketServer implements Runnable {
                 e.printStackTrace();
             }
         }
-    }
 
-    public void close() {
         try {
-            stop = true;
             serverSocket.close();
-            pool.shutdown();
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+        pool.shutdown();
+    }
+
+    public void close() {
+        stop = true;
     }
 }

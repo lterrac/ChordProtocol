@@ -85,7 +85,7 @@ public class App {
         if (parts.length == 2) {
             String ip = parts[0];
             port = Integer.parseInt(parts[1]);
-            node.forward(node.getProperties(), ip, port, "ping", 0, 0, 0,null);
+            node.forward(node.getProperties(), ip, port, "ping", 0, 0, 0, null);
         } else {
             System.out.println("Please check the correctness of the input and try again");
         }
@@ -100,10 +100,10 @@ public class App {
         System.out.println("------------------------------------------\n");
     }
 
-    private static void exit(){
-        boolean leaving=true;
-        node.distributeResources(leaving);
+    private static void exit() {
+        node.distributeResources(true);
         node.notifyNeighbours();
-        //System.exit(0);
+        node.close();
+        System.exit(0);
     }
 }

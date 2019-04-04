@@ -56,6 +56,7 @@ public class Node {
     private Stabilize stabilize;
     private NodeProperties predecessor;
 
+    private NodeSocketServer nodeSocketServer;
     private ServerSocket serverSocket;
 
     /**
@@ -160,7 +161,9 @@ public class Node {
 
         startThreads();
 
-        new Thread(new NodeSocketServer(this)).start();
+        nodeSocketServer = new NodeSocketServer(this);
+
+        new Thread(nodeSocketServer).start();
     }
 
     /**
@@ -168,10 +171,12 @@ public class Node {
      */
     void join(String ip, int port) {
         startNode();
-        forward(properties, ip, port, "find_successor", 0, 0, 0,null);
+        forward(properties, ip, port, "find_successor", 0, 0, 0, null);
 
         startThreads();
-        new Thread(new NodeSocketServer(this)).start();
+        nodeSocketServer = new NodeSocketServer(this);
+
+        new Thread(nodeSocketServer).start();
         distributeResources(false);
     }
 
@@ -189,19 +194,13 @@ public class Node {
         this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
         this.setSuccessor(this.properties);
         this.predecessor = null;
-/*
-        for (int i = 0; i < KEY_SIZE; i++) {
-            fingers[i] = properties;
-        }
-*/
     }
 
-    private void createResources()  {
-        for(int i=0;i<RESOURCESNUMBER;i++)
-        {
+    private void createResources() {
+        for (int i = 0; i < RESOURCESNUMBER; i++) {
 
-            String filename= "File"+i;
-            File f = new File("./node"+this.getProperties().getNodeId()+"files/" +filename);
+            String filename = "File" + i;
+            File f = new File("./node" + this.getProperties().getNodeId() + "files/" + filename);
             if (!f.getParentFile().exists())
                 f.getParentFile().mkdirs();
             if (!f.exists()) {
@@ -215,21 +214,20 @@ public class Node {
     }
 
     public void distributeResources(boolean leaving) {
-        if (leaving==true){
-            File folder = new File("./node"+this.getProperties().getNodeId()+"files");
+        if (leaving == true) {
+            File folder = new File("./node" + this.getProperties().getNodeId() + "files");
             File[] allFiles = folder.listFiles();
-            forward(null,successor().getIpAddress(),successor().getPort(), "transfer_files", 0, 0, 0, allFiles);
-            for(int i = 0;i < RESOURCESNUMBER;i++)
-            {
+            forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files", 0, 0, 0, allFiles);
+            for (int i = 0; i < RESOURCESNUMBER; i++) {
                 File f = allFiles[i];
                 f.delete();
             }
         }
     }
 
-    public void notifyNeighbours(){
-        forward(successor(),predecessor.getIpAddress(),predecessor.getPort(),"update_successor",0,0,0,null);
-        forward(getPredecessor(),successor().getIpAddress(),successor().getPort(),"update_predecessor",0,0,0,null);
+    public void notifyNeighbours() {
+        forward(successor(), predecessor.getIpAddress(), predecessor.getPort(), "update_successor", 0, 0, 0, null);
+        forward(getPredecessor(), successor().getIpAddress(), successor().getPort(), "update_predecessor", 0, 0, 0, null);
     }
 
 
@@ -267,15 +265,15 @@ public class Node {
             logger.log(Level.SEVERE, "inconsistency: two nodes with the same ID");
 
         if (askingNode.isInInterval(properties.getNodeId(), successor().getNodeId())) {
-            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0,null);
+            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0, null);
         } else {
             NodeProperties closest = closestPrecedingNode(askingNode.getNodeId());
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties))
-                forward(askingNode, closest.getIpAddress(), closest.getPort(), "find_successor", 0, 0, 0,null);
+                forward(askingNode, closest.getIpAddress(), closest.getPort(), "find_successor", 0, 0, 0, null);
             else
-                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0,null);
+                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "find_successor_reply", 0, 0, 0, null);
         }
     }
 
@@ -288,24 +286,16 @@ public class Node {
      */
     void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
-
-        /*System.out.println("FFS askingNode: " + askingNode);
-        System.out.println("FFS askingNodeId: " + askingNode.getNodeId());
-        System.out.println("FFS fixId: " + fixId);
-        System.out.println("FFS fixIndex: " + fixIndex);*/
-
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
-            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0,null);
+            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0, null);
         } else {
             NodeProperties closest = closestPrecedingNode(fixId);
 
-            //System.out.println("closest preceding id " + properties.getNodeId() + ": " + closest);
-
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties)) {
-                forward(askingNode, closest.getIpAddress(), closest.getPort(), "fix_finger", fixId, fixIndex, 0,null);
+                forward(askingNode, closest.getIpAddress(), closest.getPort(), "fix_finger", fixId, fixIndex, 0, null);
             } else {
-                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0,null);
+                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "fix_finger_reply", fixId, fixIndex, 0, null);
             }
         }
     }
@@ -333,42 +323,41 @@ public class Node {
     void lookup(NodeProperties askingNode, int key) {
 
         if (key > properties.getNodeId() && successor().getNodeId() >= key) {
-            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0,null);
+            forward(successor(), askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0, null);
         } else {
             NodeProperties closest = closestPrecedingNode(key);
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties))
-                forward(askingNode, closest.getIpAddress(), closest.getPort(), "lookup", 0, 0, key,null);
+                forward(askingNode, closest.getIpAddress(), closest.getPort(), "lookup", 0, 0, key, null);
             else
-                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0,null);
+                forward(properties, askingNode.getIpAddress(), askingNode.getPort(), "lookup_reply", 0, 0, 0, null);
         }
     }
 
     public void transferFiles(File[] allFiles) throws IOException {
         //System.out.println(allFiles.length);
-        for(int i=0; i<allFiles.length;i++){
-            File file=allFiles[i];
-            String name=file.getName();
+        for (int i = 0; i < allFiles.length; i++) {
+            File file = allFiles[i];
+            String name = file.getName();
             FileInputStream in = null;
             FileOutputStream out = null;
             try {
-                in = new FileInputStream("./node"+this.getProperties().getNodeId()+"files/"+name);
-                out = new FileOutputStream("./node"+this.getProperties().getNodeId()+"files/" + name+"Distributed");
+                in = new FileInputStream("./node" + this.getProperties().getNodeId() + "files/" + name);
+                out = new FileOutputStream("./node" + this.getProperties().getNodeId() + "files/" + name + "Distributed");
                 int c;
                 while ((c = in.read()) != -1) {
                     out.write(c);
                 }
             } finally {
-                if(in!=null) {
+                if (in != null) {
                     in.close();
                 }
-                if(out!=null) {
+                if (out != null) {
                     out.close();
                 }
 
             }
-
         }
     }
 
@@ -419,7 +408,7 @@ public class Node {
 
     void checkPredecessor() {
         if (predecessor != null) {
-            forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0,null);
+            forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0, null);
         }
     }
 
@@ -486,6 +475,13 @@ public class Node {
         }
 
         System.out.println("------------------------------------------\n");
+    }
+
+    public void close() {
+        checkPredecessorThread.shutdownNow();
+        fixFingersThread.shutdownNow();
+        stabilizeThread.shutdownNow();
+        nodeSocketServer.close();
     }
 }
 
