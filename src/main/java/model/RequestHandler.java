@@ -97,9 +97,7 @@ public class RequestHandler implements Runnable {
                     String receiverIp = msg.getProperties().getIpAddress();
                     int receiverPort = msg.getProperties().getPort();
 
-                    //TODO Check if it is the right behaviour
-                    if (node.isPredecessorSet())
-                        node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0, null);
+                    node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0, null);
 
                 }
                 break;
