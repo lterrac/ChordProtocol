@@ -177,7 +177,7 @@ public class Node {
         nodeSocketServer = new NodeSocketServer(this);
 
         new Thread(nodeSocketServer).start();
-        distributeResources(false);
+        distributeResources(false,0,null);
     }
 
     private void startNode() {
@@ -213,14 +213,50 @@ public class Node {
         }
     }
 
-    public void distributeResources(boolean leaving) {
+    public void distributeResources(boolean leaving, int key, File[] fileToBeForwarded) {
         if (leaving == true) {
             File folder = new File("./node" + this.getProperties().getNodeId() + "files");
             File[] allFiles = folder.listFiles();
-            forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files", 0, 0, 0, allFiles);
-            for (int i = 0; i < RESOURCESNUMBER; i++) {
+            forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files_exit", 0, 0, 0, allFiles);
+            for (int i = 0; i < allFiles.length; i++) {
                 File f = allFiles[i];
                 f.delete();
+            }
+        }
+        else{
+            if(fileToBeForwarded==null) {
+                File folder = new File("./node" + this.getProperties().getNodeId() + "files");
+                File[] allFiles = folder.listFiles();
+                for (int i = 0; i < allFiles.length; i++) {
+                    File f = allFiles[i];
+                    File[] toBeForwarded = new File[1];
+                    toBeForwarded[0]=f;
+                    System.out.println("PD "+sha1(f.getName()));
+                    System.out.println("PM"+f.getName()+"\n");
+                    if (sha1(f.getName()) > properties.getNodeId() && successor().getNodeId() >= sha1(f.getName())) {
+                        forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files_join_reply", 0, 0, 0, toBeForwarded);
+                    } else {
+                        NodeProperties closest = closestPrecedingNode(sha1(f.getName()));
+
+                        //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
+                        if (!closest.equals(properties))
+                            forward(null, closest.getIpAddress(), closest.getPort(), "transfer_files_join", 0, 0, sha1(f.getName()), toBeForwarded);
+
+                    }
+                    f.delete();
+                }
+            }
+            else{
+                if (key > properties.getNodeId() && successor().getNodeId() >= key) {
+                    forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files_join_reply", 0, 0, 0, fileToBeForwarded);
+                } else {
+                    NodeProperties closest = closestPrecedingNode(key);
+
+                    //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
+                    if (!closest.equals(properties))
+                        forward(null, closest.getIpAddress(), closest.getPort(), "transfer_files_join", 0, 0, key, fileToBeForwarded);
+                }
+                //TODO:fileToBeForwarded[0].delete();
             }
         }
     }

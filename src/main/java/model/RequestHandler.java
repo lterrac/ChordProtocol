@@ -109,7 +109,15 @@ public class RequestHandler implements Runnable {
                     node.finalizeStabilize(msg.getProperties());
                 }
                 break;
-                case "transfer_files":{
+                case "transfer_files_exit":{
+                    node.transferFiles(msg.getAllFiles());
+                }
+                break;
+                case "transfer_files_join":{
+                    node.distributeResources(false,msg.getKey(),msg.getAllFiles());
+                }
+                break;
+                case "transfer_files_join_reply":{
                     node.transferFiles(msg.getAllFiles());
                 }
                 break;

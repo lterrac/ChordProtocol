@@ -33,7 +33,15 @@ public class Stabilize implements Runnable {
                 this.successorPredecessor = node.getPredecessor();
                 node.setSuccessor(successorPredecessor);
                 // System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
+                //node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0,null);
+
             }
+        }
+
+        try {
+            Thread.sleep(1500);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
         //Inform the new successor that the current node might be its predecessor
@@ -42,14 +50,18 @@ public class Stabilize implements Runnable {
     }
 
     public void finalizeStabilize(NodeProperties successorPredecessor) {
+
         this.successorPredecessor = successorPredecessor;
 
-        // System.out.println("                                                new successorPredecessor is" + successorPredecessor.getNodeId());
+        // System.out.println("new successorPredecessor is" + successorPredecessor.getNodeId());
 
         //If the predecessor of the successor is not the current node, set the new successor of the current node
         if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
             node.setSuccessor(successorPredecessor);
+
             // System.out.println("Successor set in stabilize thread is: " + node.successor().getNodeId());
+            //node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0,null);
+
         }
     }
 

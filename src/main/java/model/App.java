@@ -101,7 +101,7 @@ public class App {
     }
 
     private static void exit() {
-        node.distributeResources(true);
+        node.distributeResources(true,0,null);
         node.notifyNeighbours();
         node.close();
         System.exit(0);
