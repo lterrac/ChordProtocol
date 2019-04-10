@@ -87,7 +87,8 @@ public class RequestHandler implements Runnable {
                     node.findSuccessor(msg.getProperties());
                 }
                 break;
-                case "find_successor_reply": {
+                case "find_successor_reply":
+                case "update_successor": {
                     //Set the successor of the current node to the one received from the network
                     node.setSuccessor(msg.getProperties());
                 }
@@ -98,8 +99,7 @@ public class RequestHandler implements Runnable {
                     int receiverPort = msg.getProperties().getPort();
 
                     //TODO Check if it is the right behaviour
-                    if (node.isPredecessorSet())
-                        node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0, null);
+                    node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0, null);
 
                 }
                 break;
@@ -123,10 +123,6 @@ public class RequestHandler implements Runnable {
                 break;
                 case "update_predecessor":{
                     node.setPredecessor(msg.getProperties());
-                }
-                break;
-                case "update_successor":{
-                    node.setSuccessor(msg.getProperties());
                 }
                 break;
                 case "lookup": {

@@ -21,9 +21,6 @@ public class Stabilize implements Runnable {
         currentNode = node.getProperties();
         successor = node.successor();
 
-        // System.out.println("Current Node in Stabilize is:" + currentNode.getNodeId());
-        // System.out.println("Successor Node in Stabilize is:" + successor.getNodeId());
-
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
             node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0,null);
@@ -77,34 +74,23 @@ package model;
 public class Stabilize implements Runnable {
 
     private final Node node;
-
-    public Stabilize(Node node) {
-        this.node = node;
-    }
-
-    @Override
-    public void run() {
-
-        if (!node.successor().equals(node.getProperties())) {
-            //Ask to the successor for its predecessor
-            node.forward(node.getProperties(), node.successor().getIpAddress(), node.successor().getPort(), "predecessor", 0, 0, 0);
-
-        } else {
-            if (!node.isPredecessorSet()) {
-                node.setPredecessor(node.getProperties());
+=======
             }
         }
     }
 
     public void finalizeStabilize(NodeProperties successorPredecessor) {
+        if (successorPredecessor != null) {
+            this.successorPredecessor = successorPredecessor;
+>>>>>>> 866acbb9f07e5c04e4d30083b0ffbed69ea46fad
 
-        //If the predecessor of the successor is not the current node, set the new successor of the current node
-        if (successorPredecessor.isInIntervalStrict(node.getProperties().getNodeId(), node.successor().getNodeId())) {
-            node.setSuccessor(successorPredecessor);
+            //If the predecessor of the successor is not the current node, set the new successor of the current node
+            if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
+                node.setSuccessor(successorPredecessor);
+            }
         }
-        //Inform the new successor that the current node might be its predecessor
-        node.forward(node.getProperties(), node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0);
-    }
 
+        //Inform the new successor that the current node might be its predecessor
+        node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0, null);
+    }
 }
-*/
