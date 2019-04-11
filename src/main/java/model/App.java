@@ -1,9 +1,11 @@
 package model;
 
+import java.io.File;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
 import static model.NodeProperties.KEY_SIZE;
+import static utilities.Utilities.sha1;
 
 public class App {
 
@@ -54,6 +56,9 @@ public class App {
                 case 6: // Ping request
                     ping();
                     break;
+                case 7:
+                    printResources();
+                    break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
                     exit();
@@ -72,6 +77,7 @@ public class App {
         System.out.println("4. The file key IDs and content contained by the current node;");
         System.out.println("5. Lookup for a resource;");
         System.out.println("6. Ping a node;");
+        System.out.println("7. Print your resources");
         System.out.println("0. Leave the network");
     }
 
@@ -93,11 +99,20 @@ public class App {
     }
 
     private static void lookup() {
-        System.out.println("Insert the key you are looking for (it must be in the range [0," + KEY_SIZE + "]):");
+        System.out.println("Insert the key you are looking for (it must be in the range [0," + (int)Math.pow(2,KEY_SIZE) + "]):");
         int key = intScanner.nextInt();
         node.lookup(node.getProperties(), key);
 
         System.out.println("------------------------------------------\n");
+    }
+
+    private static void printResources() {
+        File folder = new File("./node" + node.getProperties().getNodeId() + "files");
+        File[] allFiles = folder.listFiles();
+        for (int i = 0; i < allFiles.length; i++) {
+            System.out.println("SHA of the File: " + sha1(allFiles[i].getName()));
+            System.out.println("File Name: " + allFiles[i].getName());
+        }
     }
 
     private static void exit() {

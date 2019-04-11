@@ -74,7 +74,6 @@ package model;
 public class Stabilize implements Runnable {
 
     private final Node node;
-=======
             }
         }
     }
@@ -82,7 +81,7 @@ public class Stabilize implements Runnable {
     public void finalizeStabilize(NodeProperties successorPredecessor) {
         if (successorPredecessor != null) {
             this.successorPredecessor = successorPredecessor;
->>>>>>> 866acbb9f07e5c04e4d30083b0ffbed69ea46fad
+
 
             //If the predecessor of the successor is not the current node, set the new successor of the current node
             if (successorPredecessor.isInIntervalStrict(currentNode.getNodeId(), successor.getNodeId())) {
@@ -93,4 +92,4 @@ public class Stabilize implements Runnable {
         //Inform the new successor that the current node might be its predecessor
         node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0, null);
     }
-}
+}*/

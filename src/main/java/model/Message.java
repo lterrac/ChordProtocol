@@ -11,7 +11,7 @@ public class Message implements Serializable {
     private int fixId;
     private int fixIndex;
     private int key;
-    private File[]allFiles;
+    private File[] allFiles;
 
     /**
      * Constructor of Message objects

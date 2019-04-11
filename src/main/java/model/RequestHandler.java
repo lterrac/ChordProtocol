@@ -114,7 +114,7 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 case "transfer_files_join":{
-                    node.distributeResources(false,msg.getKey(),msg.getAllFiles());
+                    node.distributeResources(false, msg.getKey(),msg.getAllFiles());
                 }
                 break;
                 case "transfer_files_join_reply":{
@@ -123,6 +123,10 @@ public class RequestHandler implements Runnable {
                 break;
                 case "update_predecessor":{
                     node.setPredecessor(msg.getProperties());
+                }
+                break;
+                case "ask_successor_resources":{
+                    node.giveResourcesToNewPredecessor();
                 }
                 break;
                 case "lookup": {

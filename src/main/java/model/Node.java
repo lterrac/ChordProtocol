@@ -90,7 +90,7 @@ public class Node {
     // Setter
     public void setPredecessor(NodeProperties predecessor) {
         this.predecessor = predecessor;
-        //TODO:inviare al predecessore le risorse che spettano a lui
+        //TODO:inviare al predecessore le risorse che spettano a lui, SPOSTATO SOTTO FORMA DI RICHIESTA E RISPOSTA
     }
 
     /**
@@ -177,7 +177,14 @@ public class Node {
         nodeSocketServer = new NodeSocketServer(this);
 
         new Thread(nodeSocketServer).start();
+        //TODO:to be substituted with the check of convergence of the finger table
+        try {
+            Thread.sleep(15000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         distributeResources(false,0,null);
+        askSuccessorForResources();
     }
 
     private void startNode() {
@@ -199,7 +206,7 @@ public class Node {
     private void createResources() {
         for (int i = 0; i < RESOURCESNUMBER; i++) {
 
-            String filename = "File" + i;
+            String filename = "File" + i+"-Node"+this.getProperties().getNodeId();
             File f = new File("./node" + this.getProperties().getNodeId() + "files/" + filename);
             if (!f.getParentFile().exists())
                 f.getParentFile().mkdirs();
@@ -214,6 +221,7 @@ public class Node {
     }
 
     public void distributeResources(boolean leaving, int key, File[] fileToBeForwarded) {
+
         if (leaving == true) {
             File folder = new File("./node" + this.getProperties().getNodeId() + "files");
             File[] allFiles = folder.listFiles();
@@ -231,32 +239,50 @@ public class Node {
                     File f = allFiles[i];
                     File[] toBeForwarded = new File[1];
                     toBeForwarded[0]=f;
-                    System.out.println("PD "+sha1(f.getName()));
-                    System.out.println("PM"+f.getName()+"\n");
-                    if (sha1(f.getName()) > properties.getNodeId() && successor().getNodeId() >= sha1(f.getName())) {
+                    //System.out.println("SHA: "+sha1(f.getName()));
+                    //System.out.println("NOME FILE "+f.getName());
+                    if (NodeProperties.isInIntervalInteger(properties.getNodeId(),sha1(f.getName()),successor().getNodeId())) {
                         forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files_join_reply", 0, 0, 0, toBeForwarded);
                     } else {
                         NodeProperties closest = closestPrecedingNode(sha1(f.getName()));
 
-                        //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
-                        if (!closest.equals(properties))
+                        if (!closest.equals(properties)) {
                             forward(null, closest.getIpAddress(), closest.getPort(), "transfer_files_join", 0, 0, sha1(f.getName()), toBeForwarded);
-
+                        }
                     }
                     f.delete();
                 }
             }
             else{
-                if (key > properties.getNodeId() && successor().getNodeId() >= key) {
+                if (NodeProperties.isInIntervalInteger(properties.getNodeId(),key,successor().getNodeId())) {
                     forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files_join_reply", 0, 0, 0, fileToBeForwarded);
                 } else {
                     NodeProperties closest = closestPrecedingNode(key);
 
-                    //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
                     if (!closest.equals(properties))
                         forward(null, closest.getIpAddress(), closest.getPort(), "transfer_files_join", 0, 0, key, fileToBeForwarded);
                 }
-                //TODO:fileToBeForwarded[0].delete();
+            }
+        }
+    }
+
+    public void askSuccessorForResources(){
+        forward(null, successor().getIpAddress(), successor().getPort(), "ask_successor_resources", 0, 0, 0, null);
+    }
+
+    public void giveResourcesToNewPredecessor(){
+        File folder = new File("./node" + this.getProperties().getNodeId() + "files");
+        File[] allFiles = folder.listFiles();
+        //System.out.println("List of sent files due to new predecessor: "+"\n");
+        for (int i = 0; i < allFiles.length; i++) {
+            File f = allFiles[i];
+            File[] toBeForwarded = new File[1];
+            toBeForwarded[0] = f;
+            if(isInIntervalInteger(sha1(allFiles[i].getName()),predecessor.getNodeId(),properties.getNodeId())){
+                //System.out.println("SHA: "+sha1(f.getName()));
+                //System.out.println("NOME FILE: "+f.getName());
+                forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files_join_reply", 0, 0, 0, toBeForwarded);
+                f.delete();
             }
         }
     }
@@ -286,6 +312,7 @@ public class Node {
     void notifySuccessor(NodeProperties predecessor) {
         if ((this.predecessor == null || predecessor.isInIntervalStrict(this.predecessor.getNodeId(), properties.getNodeId()))) {
             setPredecessor(predecessor);
+            //TODO:check risorse
         }
     }
 
@@ -372,27 +399,16 @@ public class Node {
     }
 
     public void transferFiles(File[] allFiles) throws IOException {
-        //System.out.println(allFiles.length);
         for (int i = 0; i < allFiles.length; i++) {
             File file = allFiles[i];
             String name = file.getName();
-            FileInputStream in = null;
             FileOutputStream out = null;
             try {
-                in = new FileInputStream("./node" + this.getProperties().getNodeId() + "files/" + name);
-                out = new FileOutputStream("./node" + this.getProperties().getNodeId() + "files/" + name + "Distributed");
-                int c;
-                while ((c = in.read()) != -1) {
-                    out.write(c);
-                }
+                out = new FileOutputStream("./node" + this.getProperties().getNodeId() + "files/" + name);
             } finally {
-                if (in != null) {
-                    in.close();
-                }
                 if (out != null) {
                     out.close();
                 }
-
             }
         }
     }
