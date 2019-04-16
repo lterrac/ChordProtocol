@@ -9,6 +9,8 @@ import java.net.SocketException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static utilities.Utilities.sha1;
+
 
 public class RequestHandler implements Runnable {
 
@@ -115,15 +117,15 @@ public class RequestHandler implements Runnable {
                 break;
                 case "file_to_predecessor": {
                     /* TODO check if inconsistency w.r.t. predecessor trigger
-                    if(sha1(msg.getFile())<= node.getPredecessor().getNodeId()){
-                        node.forward(null, node.getPredecessor().getIpAddress(), node.getPredecessor().getPort(), "file_to_predecessor", 0 , 0 , 0, msg.getFile());
-                    }
-                    */
+                    if (sha1(msg.getFile().getName()) <= node.getPredecessor().getNodeId()) {
+                        node.sendResource(node.getPredecessor().getIpAddress(), node.getPredecessor().getPort(), "file_to_predecessor", msg.getFile());
+                    } */
                     node.saveFile(msg.getFile());
                 }
                 break;
                 case "distribute_resource": {
-                    node.distributeResources(msg.getFile());
+                    node.distributeResource(msg.getFile());
+                    //node.checkResources(); TODO innesca cicli
                 }
                 break;
                 case "update_predecessor": {
