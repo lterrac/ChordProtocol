@@ -8,9 +8,9 @@ import java.io.Serializable;
 public class NodeProperties implements Serializable {
 
     public static final int KEY_SIZE = 8; // size of the keys
-    static final int CHECK_PERIOD = 1000; // waiting time for the checkPredecessor request
-    static final int FIX_PERIOD = 1000; // fixFingers period
-    static final int STABILIZE_PERIOD = 1000; // stabilize period
+    static final int CHECK_PERIOD = 200; // waiting time for the checkPredecessor request
+    static final int FIX_PERIOD = 200; // fixFingers period
+    static final int STABILIZE_PERIOD = 200; // stabilize period
     static final int RESOURCESNUMBER = 10;
 
     private final int nodeId;

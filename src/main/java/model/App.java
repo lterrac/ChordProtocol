@@ -1,9 +1,11 @@
 package model;
 
+import java.io.File;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
 import static model.NodeProperties.KEY_SIZE;
+import static utilities.Utilities.sha1;
 
 public class App {
 
@@ -46,7 +48,7 @@ public class App {
                     node.printPredecessorAndSuccessor();
                     break;
                 case 4: // resources contained by the node
-                    node.printResources();
+                    printResources();
                     break;
                 case 5: // Look for a key
                     lookup();
@@ -101,9 +103,24 @@ public class App {
     }
 
     private static void exit() {
-        node.distributeResources(true);
+        node.transferOnLeave();
         node.notifyNeighbours();
         node.close();
         System.exit(0);
+    }
+
+    private static void printResources(){
+        File folder = new File("./node" + node.getProperties().getNodeId());
+        File[] allFiles = folder.listFiles();
+
+        if (allFiles != null) {
+            System.out.println(allFiles.length + " resources available in node "+ node.getProperties().getNodeId() + ":");
+            for (File allFile : allFiles) {
+                System.out.println("SHA: " + sha1(allFile.getName()) + "\tName: " + allFile.getName());
+            }
+        } else {
+            System.out.println("No resources available yet.");
+        }
+        System.out.println("------------------------------------------\n");
     }
 }

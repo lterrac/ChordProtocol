@@ -109,11 +109,24 @@ public class RequestHandler implements Runnable {
                     node.finalizeStabilize(msg.getProperties());
                 }
                 break;
-                case "transfer_files":{
-                    node.transferFiles(msg.getAllFiles());
+                case "transfer_after_leave": {
+                    node.saveFile(msg.getFile());
                 }
                 break;
-                case "update_predecessor":{
+                case "file_to_predecessor": {
+                    /* TODO check if inconsistency w.r.t. predecessor trigger
+                    if(sha1(msg.getFile())<= node.getPredecessor().getNodeId()){
+                        node.forward(null, node.getPredecessor().getIpAddress(), node.getPredecessor().getPort(), "file_to_predecessor", 0 , 0 , 0, msg.getFile());
+                    }
+                    */
+                    node.saveFile(msg.getFile());
+                }
+                break;
+                case "distribute_resource": {
+                    node.distributeResources(msg.getFile());
+                }
+                break;
+                case "update_predecessor": {
                     node.setPredecessor(msg.getProperties());
                 }
                 break;

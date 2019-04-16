@@ -15,13 +15,13 @@ public class Forwarder {
     private ObjectOutputStream out;
     private ObjectInputStream in;
 
-    public synchronized void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey, File[] allFiles) {
+    public synchronized void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey, File file) {
 
         try {
             clientSocket = new Socket(ip, port);
             out = new ObjectOutputStream(clientSocket.getOutputStream());
             in = new ObjectInputStream(clientSocket.getInputStream());
-            Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey, allFiles);
+            Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey, file);
             out.writeObject(msg);
             out.flush();
 

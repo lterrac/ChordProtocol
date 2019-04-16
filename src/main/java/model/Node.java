@@ -1,11 +1,13 @@
 package model;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -14,6 +16,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import static model.NodeProperties.*;
+import static utilities.Utilities.calculateFixId;
 import static utilities.Utilities.sha1;
 
 public class Node {
@@ -28,14 +31,12 @@ public class Node {
      * Represents the "client side" of a node. It sends requests to other nodes
      */
     private Forwarder forwarder;
+
     /**
      * Contains information about the node
      */
     private NodeProperties properties;
-    /**
-     * Data contained in the node
-     */
-    private HashMap<Integer, Serializable> data;
+
     /**
      * List of adjacent successors of the node
      */
@@ -67,7 +68,6 @@ public class Node {
     public Node() {
         n_fix = -1;
         successors = new ArrayList<>();
-        data = new HashMap<>();
 
         checkPredecessor = new CheckPredecessor(this);
         fixFingers = new FixFingers(this);
@@ -90,7 +90,7 @@ public class Node {
     // Setter
     public void setPredecessor(NodeProperties predecessor) {
         this.predecessor = predecessor;
-        //TODO:inviare al predecessore le risorse che spettano a lui
+        distributePredecessor();
     }
 
     /**
@@ -177,7 +177,17 @@ public class Node {
         nodeSocketServer = new NodeSocketServer(this);
 
         new Thread(nodeSocketServer).start();
-        distributeResources(false);
+        forwardResources(ip, port);
+    }
+
+    // TODO: after the switch to the Visitor pattern, send them as a list
+    private void forwardResources(String ip, int port) {
+        File folder = new File("./node" + this.getProperties().getNodeId());
+        File[] allFiles = folder.listFiles();
+        for (File file : allFiles) {
+            forward(null, successor().getIpAddress(), successor().getPort(), "distribute_resource", 0, 0, 0, file);
+            file.delete();
+        }
     }
 
     private void startNode() {
@@ -198,9 +208,8 @@ public class Node {
 
     private void createResources() {
         for (int i = 0; i < RESOURCESNUMBER; i++) {
-
-            String filename = "File" + i;
-            File f = new File("./node" + this.getProperties().getNodeId() + "files/" + filename);
+            String filename = "Node" + properties.getNodeId() + "-File" + i;
+            File f = new File("./node" + this.getProperties().getNodeId() + "/" + filename);
             if (!f.getParentFile().exists())
                 f.getParentFile().mkdirs();
             if (!f.exists()) {
@@ -209,18 +218,6 @@ public class Node {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-        }
-    }
-
-    public void distributeResources(boolean leaving) {
-        if (leaving == true) {
-            File folder = new File("./node" + this.getProperties().getNodeId() + "files");
-            File[] allFiles = folder.listFiles();
-            forward(null, successor().getIpAddress(), successor().getPort(), "transfer_files", 0, 0, 0, allFiles);
-            for (int i = 0; i < RESOURCESNUMBER; i++) {
-                File f = allFiles[i];
-                f.delete();
             }
         }
     }
@@ -237,8 +234,8 @@ public class Node {
         stabilizeThread = Executors.newSingleThreadScheduledExecutor();
 
         checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, CHECK_PERIOD, TimeUnit.MILLISECONDS);
-        fixFingersThread.scheduleAtFixedRate(fixFingers, 2000, FIX_PERIOD, TimeUnit.MILLISECONDS);
-        stabilizeThread.scheduleAtFixedRate(stabilize, 4000, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
+        fixFingersThread.scheduleAtFixedRate(fixFingers, 200, FIX_PERIOD, TimeUnit.MILLISECONDS);
+        stabilizeThread.scheduleAtFixedRate(stabilize, 400, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
     }
 
 
@@ -335,28 +332,19 @@ public class Node {
         }
     }
 
-    public void transferFiles(File[] allFiles) throws IOException {
-        //System.out.println(allFiles.length);
-        for (int i = 0; i < allFiles.length; i++) {
-            File file = allFiles[i];
-            String name = file.getName();
-            FileInputStream in = null;
-            FileOutputStream out = null;
-            try {
-                in = new FileInputStream("./node" + this.getProperties().getNodeId() + "files/" + name);
-                out = new FileOutputStream("./node" + this.getProperties().getNodeId() + "files/" + name + "Distributed");
-                int c;
-                while ((c = in.read()) != -1) {
-                    out.write(c);
-                }
-            } finally {
-                if (in != null) {
-                    in.close();
-                }
-                if (out != null) {
+    public void saveFile(File file) {
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream("./node" + properties.getNodeId() + "/" + file.getName());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } finally {
+            if (out != null) {
+                try {
                     out.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-
             }
         }
     }
@@ -378,8 +366,8 @@ public class Node {
      * @param msg        is the kind of request
      * @param key        is the hash of the key to search on the net
      */
-    void forward(NodeProperties targetNode, String ip, int port, String msg, int fixId, int fixIndex, int key, File[] allFiles) {
-        forwarder.makeRequest(targetNode, ip, port, msg, fixId, fixIndex, key, allFiles);
+    void forward(NodeProperties targetNode, String ip, int port, String msg, int fixId, int fixIndex, int key, File file) {
+        forwarder.makeRequest(targetNode, ip, port, msg, fixId, fixIndex, key, file);
     }
 
     /**
@@ -407,9 +395,7 @@ public class Node {
     }
 
     void checkPredecessor() {
-        if (predecessor != null) {
-            forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0, null);
-        }
+        forward(properties, predecessor.getIpAddress(), predecessor.getPort(), "check_predecessor", 0, 0, 0, null);
     }
 
     boolean isPredecessorSet() {
@@ -467,21 +453,121 @@ public class Node {
         System.out.println("------------------------------------------\n");
     }
 
-    void printResources() {
-        System.out.println("List of resources' keys contained by node " + properties.getNodeId() + ":");
-
-        for (int resource : data.keySet()) {
-            System.out.println(resource + ": " + data.get(resource).toString());
-        }
-
-        System.out.println("------------------------------------------\n");
-    }
-
+    /**
+     * Terminate all the threads and close the socket connection of the server side
+     */
     public void close() {
         checkPredecessorThread.shutdownNow();
         fixFingersThread.shutdownNow();
         stabilizeThread.shutdownNow();
         nodeSocketServer.close();
+    }
+
+    /**
+     * Send the files to be assigned to your predecessor
+     */
+    public void distributePredecessor() {
+        File folder = new File("./node" + properties.getNodeId());
+        File[] allFiles = folder.listFiles();
+
+        for (File file : allFiles) {
+            if (!isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
+                sendResource(predecessor.getIpAddress(), predecessor.getPort(), "file_to_predecessor", file);
+                file.delete();
+            }
+        }
+    }
+
+    private void sendResource(String ip, int port, String message, File file) {
+        forward(null, ip, port, message, 0, 0, 0, file);
+    }
+
+    public void distributeResources(File file) {
+
+        // if the resource must be kept
+        if (isPredecessorSet() && isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
+            saveFile(file);
+            return;
+        }
+
+        int highestIndex = searchHighestFinger();
+
+        // if the resource must be sent to one of the fingers
+        for (int i = 0; i < KEY_SIZE; i++) {
+
+            int fileId = sha1(file.getName());
+            int lowerBound = calculateFixId(properties.getNodeId(), i);
+            int upperBound = calculateFixId(properties.getNodeId(), i + 1);
+
+            if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound)) {
+                sendResource(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), "distribute_resource", file);
+                return;
+            }
+        }
+
+        // if the resource is out of the scope of the finger table forward it to the last finger, but only if it's not yourself
+        if (highestIndex != properties.getNodeId()) {
+            sendResource(fingers[highestIndex].getIpAddress(), fingers[highestIndex].getPort(), "distribute_resource", file);
+        } else {
+            saveFile(file); // temporarily save the file
+        }
+
+        // TODO forse non serve
+        // TODO maybe it is better to do this periodically or to send the resources as a list
+        // activate the "trigger" to check if you're keeping the right resources
+        //checkResources(); TODO: concurrent access to files by different nodes on the same machine if enabled
+    }
+
+    private int searchHighestFinger() {
+        for (int i = KEY_SIZE - 1; i >= 0; i--) {
+            if (fingers[i] != null) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    // check if you must send some resources to other nodes
+    private void checkResources() {
+        File folder = new File("./node" + properties.getNodeId());
+        File[] allFiles = folder.listFiles();
+
+        for (File file : allFiles) {
+            int fileId = sha1(file.getName());
+            int highestIndex = searchHighestFinger();
+
+            if (!isPredecessorSet() || !isInIntervalInteger(predecessor.getNodeId(), fileId, properties.getNodeId())) {
+
+                // if the resource must be sent to one of the fingers
+                for (int i = 0; i < KEY_SIZE; i++) {
+
+                    int lowerBound = calculateFixId(properties.getNodeId(), i);
+                    int upperBound = calculateFixId(properties.getNodeId(), i + 1);
+
+                    if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound)) {
+                        sendResource(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), "distribute_resource", file);
+                        file.delete();
+                        return;
+                    }
+                }
+            }
+
+            // if the resource is out of the scope of the finger table forward it to the last finger, but only if it's not yourself
+            if (highestIndex != properties.getNodeId()) {
+                sendResource(fingers[highestIndex].getIpAddress(), fingers[highestIndex].getPort(), "distribute_resource", file);
+                file.delete();
+            }
+        }
+    }
+
+    public void transferOnLeave() {
+        File folder = new File("./node" + properties.getNodeId());
+        File[] allFiles = folder.listFiles();
+
+        // TODO: after the switch to the Visitor pattern, send them as a list
+        for (File file : allFiles) {
+            sendResource(successor().getIpAddress(), successor().getPort(), "transfer_after_leave", file);
+        }
     }
 }
 

@@ -1,12 +1,9 @@
 package model;
 
-import java.util.Timer;
-
 public class Stabilize implements Runnable {
 
     private final Node node;
     private NodeProperties successorPredecessor;
-    private Timer timer;
     private NodeProperties currentNode;
     private NodeProperties successor;
 
@@ -23,7 +20,7 @@ public class Stabilize implements Runnable {
 
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
-            node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0,null);
+            node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0, null);
 
         } else {
             if (node.isPredecessorSet()) {
