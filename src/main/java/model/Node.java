@@ -48,6 +48,7 @@ public class Node {
     private ScheduledExecutorService checkPredecessorThread;
     private ScheduledExecutorService fixFingersThread;
     private ScheduledExecutorService stabilizeThread;
+    private ScheduledExecutorService forwarderThread;
 
     /**
      * Classes containing the threads code
@@ -90,6 +91,8 @@ public class Node {
     // Setter
     public void setPredecessor(NodeProperties predecessor) {
         this.predecessor = predecessor;
+
+        //Each time the predecessor is set, check if any resources should be forwarded to it
         distributePredecessor();
     }
 
@@ -192,11 +195,10 @@ public class Node {
 
     private void startNode() {
         serverSocket = createServerSocket();
-        forwarder = new Forwarder();
         int port = serverSocket.getLocalPort();
         String ipAddress = getCurrentIp();
-
         initializeNode(ipAddress, port);
+        forwarder = new Forwarder(properties.getNodeId());
         createResources();
     }
 
@@ -207,7 +209,7 @@ public class Node {
     }
 
     private void createResources() {
-        for (int i = 0; i < RESOURCESNUMBER; i++) {
+        for (int i = 0; i < RESOURCES_NUMBER; i++) {
             String filename = "Node" + properties.getNodeId() + "-File" + i;
             File f = new File("./node" + this.getProperties().getNodeId() + "/" + filename);
             if (!f.getParentFile().exists())
@@ -232,7 +234,9 @@ public class Node {
         checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
         stabilizeThread = Executors.newSingleThreadScheduledExecutor();
+        forwarderThread = Executors.newSingleThreadScheduledExecutor();
 
+        forwarderThread.scheduleAtFixedRate(forwarder, 1, CHECK_SOCKET_PERIOD, TimeUnit.MILLISECONDS);
         checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, CHECK_PERIOD, TimeUnit.MILLISECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 200, FIX_PERIOD, TimeUnit.MILLISECONDS);
         stabilizeThread.scheduleAtFixedRate(stabilize, 400, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
@@ -390,8 +394,9 @@ public class Node {
      * @param newNode is the new value for the row with index i in the table
      */
     void updateFinger(int i, NodeProperties newNode) {
-        // TODO: synchronized?
-        fingers[i] = newNode;
+        synchronized (fingers) {
+            fingers[i] = newNode;
+        }
     }
 
     void checkPredecessor() {
@@ -460,14 +465,17 @@ public class Node {
         checkPredecessorThread.shutdownNow();
         fixFingersThread.shutdownNow();
         stabilizeThread.shutdownNow();
+        forwarderThread.shutdownNow();
+        forwarder.stop();
         nodeSocketServer.close();
+        forwarder.stop();
     }
 
     /**
      * Send the files to be assigned to your predecessor
      */
     public void distributePredecessor() {
-        System.out.println("___________________________________________________________________________________________________________________PREDECESSOR______________");
+ /*      // System.out.println("___________________________________________________________________________________________________________________PREDECESSOR______________");
         File folder = new File("./node" + properties.getNodeId());
         File[] allFiles = folder.listFiles();
 
@@ -476,7 +484,7 @@ public class Node {
                 sendResource(predecessor.getIpAddress(), predecessor.getPort(), "file_to_predecessor", file);
                 file.delete();
             }
-        }
+        }*/
     }
 
     public void sendResource(String ip, int port, String message, File file) {
@@ -484,13 +492,14 @@ public class Node {
     }
 
     public void distributeResource(File file) {
-
+/*
         // if the resource must be kept
         if (isPredecessorSet() && isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
             saveFile(file);
             return;
         }
 
+        //Search for the highest finger available
         int highestIndex = searchHighestFinger();
 
         // if the resource must be sent to one of the fingers
@@ -500,21 +509,23 @@ public class Node {
             int lowerBound = calculateFixId(properties.getNodeId(), i);
             int upperBound = calculateFixId(properties.getNodeId(), i + 1);
 
-            if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound) && fileId <= fingers[i + 1].getNodeId()) {
+            if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound)) {
                 sendResource(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), "distribute_resource", file);
                 return;
             }
-            System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE FOR______________");
+       //     System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE FOR______________");
         }
 
         // if the resource is out of the scope of the finger table forward it to the last finger, but only if it's not yourself
         if (fingers[highestIndex].getNodeId() != properties.getNodeId()) {
-            System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE LAST______________");
+     //       System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE LAST______________");
 
             sendResource(fingers[highestIndex].getIpAddress(), fingers[highestIndex].getPort(), "distribute_resource", file);
         } else {
             saveFile(file); // temporarily save the file
         }
+
+ */
     }
 
     // return the highest non null finger index
