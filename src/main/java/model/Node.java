@@ -90,10 +90,18 @@ public class Node {
 
     // Setter
     public void setPredecessor(NodeProperties predecessor) {
-        this.predecessor = predecessor;
+        if (predecessor == null) {
+            this.predecessor = null;
+            return;
+        }
 
-        //Each time the predecessor is set, check if any resources should be forwarded to it
-        distributePredecessor();
+        //Each time the predecessor is updated, check if any resources should be forwarded to it
+        if(!isPredecessorSet() || !this.predecessor.equals(predecessor)) {
+            this.predecessor = predecessor;
+            distributePredecessor();
+        }
+
+
     }
 
     /**
@@ -189,7 +197,9 @@ public class Node {
         File[] allFiles = folder.listFiles();
         for (File file : allFiles) {
             forward(null, successor().getIpAddress(), successor().getPort(), "distribute_resource", 0, 0, 0, file);
-            file.delete();
+            if(!file.delete()){
+                System.out.println("File " + sha1(file.getName())+ " not deleted");
+            }
         }
     }
 
@@ -475,12 +485,17 @@ public class Node {
      * Send the files to be assigned to your predecessor
      */
     public void distributePredecessor() {
+<<<<<<< HEAD
        // System.out.println("___________________________________________________________________________________________________________________PREDECESSOR______________");
+=======
+        System.out.println("___________________________________________________________________________________________________________________PREDECESSOR______________");
+>>>>>>> d29e49d0c5674938878778910378cfb383305ecb
         File folder = new File("./node" + properties.getNodeId());
         File[] allFiles = folder.listFiles();
 
         for (File file : allFiles) {
             if (isPredecessorSet() && !isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
+                System.out.println("File " + sha1(file.getName()) + " to " + predecessor.getNodeId());
                 sendResource(predecessor.getIpAddress(), predecessor.getPort(), "file_to_predecessor", file);
                 file.delete();
             }
@@ -492,6 +507,10 @@ public class Node {
     }
 
     public void distributeResource(File file) {
+<<<<<<< HEAD
+=======
+        int fileId = sha1(file.getName());
+>>>>>>> d29e49d0c5674938878778910378cfb383305ecb
 
         // if the resource must be kept
         if (isPredecessorSet() && isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
@@ -502,24 +521,32 @@ public class Node {
         //Search for the highest finger available
         int highestIndex = searchHighestFinger();
 
+        // if the resource must be sent to the successor
+        if (isInIntervalInteger(properties.getNodeId(), fileId, successor().getNodeId())) {
+            System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE SUCCESSOR______________");
+            System.out.println("File " + fileId + " to " + successor().getNodeId());
+            sendResource(successor().getIpAddress(), successor().getPort(), "distribute_resource", file);
+            return;
+        }
+
         // if the resource must be sent to one of the fingers
         for (int i = 0; i < KEY_SIZE - 1; i++) {
-
-            int fileId = sha1(file.getName());
             int lowerBound = calculateFixId(properties.getNodeId(), i);
             int upperBound = calculateFixId(properties.getNodeId(), i + 1);
 
             if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound)) {
+                System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE FOR______________");
+                System.out.println("File " + fileId + " to " + fingers[i + 1].getNodeId());
                 sendResource(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), "distribute_resource", file);
                 return;
             }
-       //     System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE FOR______________");
+
         }
 
         // if the resource is out of the scope of the finger table forward it to the last finger, but only if it's not yourself
         if (fingers[highestIndex].getNodeId() != properties.getNodeId()) {
-     //       System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE LAST______________");
-
+            System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE LAST______________");
+            System.out.println("File " + fileId + " to " + fingers[highestIndex].getNodeId());
             sendResource(fingers[highestIndex].getIpAddress(), fingers[highestIndex].getPort(), "distribute_resource", file);
         } else {
             saveFile(file); // temporarily save the file

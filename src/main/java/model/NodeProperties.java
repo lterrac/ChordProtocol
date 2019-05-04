@@ -12,7 +12,7 @@ public class NodeProperties implements Serializable {
     static final int FIX_PERIOD = 200; // fixFingers period
     static final int CHECK_SOCKET_PERIOD = 10000; // check for unused sockets period
     static final int STABILIZE_PERIOD = 200; // stabilize period
-    static final int RESOURCES_NUMBER = 10;
+    static final int RESOURCES_NUMBER = 5;
 
     private final int nodeId;
     private String ipAddress;
@@ -89,7 +89,10 @@ public class NodeProperties implements Serializable {
     public boolean equals(Object obj) {
         if (obj instanceof NodeProperties) {
             NodeProperties node = (NodeProperties) obj;
-            return nodeId == node.getNodeId();
+            boolean id = nodeId == node.getNodeId();
+            boolean port = getPort() == node.getPort();
+            boolean ip = getIpAddress().equals(node.getIpAddress());
+            return id && port && ip;
         } else return false;
     }
 }

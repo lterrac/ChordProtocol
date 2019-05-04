@@ -125,7 +125,7 @@ public class RequestHandler implements Runnable {
                 break;
                 case "distribute_resource": {
                     node.distributeResource(msg.getFile());
-                    //node.checkResources(); TODO innesca cicli
+                    //node.checkResources(); //TODO innesca cicli
                 }
                 break;
                 case "update_predecessor": {
