@@ -180,11 +180,11 @@ public class Node {
         nodeSocketServer = new NodeSocketServer(this);
 
         new Thread(nodeSocketServer).start();
-        forwardResources(ip, port);
+        //forwardResources(ip, port);
     }
 
     // TODO: after the switch to the Visitor pattern, send them as a list
-    private void forwardResources(String ip, int port) {
+    public void forwardResources(String ip, int port) {
         File folder = new File("./node" + this.getProperties().getNodeId());
         File[] allFiles = folder.listFiles();
         for (File file : allFiles) {
@@ -475,7 +475,7 @@ public class Node {
      * Send the files to be assigned to your predecessor
      */
     public void distributePredecessor() {
- /*      // System.out.println("___________________________________________________________________________________________________________________PREDECESSOR______________");
+       // System.out.println("___________________________________________________________________________________________________________________PREDECESSOR______________");
         File folder = new File("./node" + properties.getNodeId());
         File[] allFiles = folder.listFiles();
 
@@ -484,7 +484,7 @@ public class Node {
                 sendResource(predecessor.getIpAddress(), predecessor.getPort(), "file_to_predecessor", file);
                 file.delete();
             }
-        }*/
+        }
     }
 
     public void sendResource(String ip, int port, String message, File file) {
@@ -492,7 +492,7 @@ public class Node {
     }
 
     public void distributeResource(File file) {
-/*
+
         // if the resource must be kept
         if (isPredecessorSet() && isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
             saveFile(file);
@@ -525,7 +525,7 @@ public class Node {
             saveFile(file); // temporarily save the file
         }
 
- */
+
     }
 
     // return the highest non null finger index

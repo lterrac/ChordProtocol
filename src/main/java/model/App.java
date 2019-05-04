@@ -13,7 +13,8 @@ public class App {
     private static Node node;
     private static Scanner stringScanner = new Scanner(System.in);
     private static Scanner intScanner = new Scanner(System.in); // To avoid burning new line characters
-
+    private static String knownIp;
+    private static int knownPort;
     public static void main(String[] args) {
         System.out.println("Enter \"new\" if you are the Net Generator, otherwise enter IP and port (\"IP\":\"port\") of the Node you know.");
 
@@ -23,8 +24,8 @@ public class App {
             node.create();
         } else {
             String[] parts = input.split(":");
-            String knownIp = parts[0];
-            int knownPort = Integer.parseInt(parts[1]);
+            knownIp = parts[0];
+            knownPort = Integer.parseInt(parts[1]);
             node = new Node();
             node.join(knownIp, knownPort);
         }
@@ -56,6 +57,9 @@ public class App {
                 case 6: // Ping request
                     ping();
                     break;
+                case 7:
+                    node.forwardResources(knownIp,knownPort);
+                    break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
                     exit();
@@ -74,6 +78,7 @@ public class App {
         System.out.println("4. The file key IDs and content contained by the current node;");
         System.out.println("5. Lookup for a resource;");
         System.out.println("6. Ping a node;");
+        System.out.println("7. Publish your resources on the net");
         System.out.println("0. Leave the network");
     }
 
