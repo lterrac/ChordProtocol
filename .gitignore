@@ -15,6 +15,7 @@ out/
 .mtj.tmp/
 
 # Package Files #
+*.iml
 *.jar
 *.war
 *.nar
