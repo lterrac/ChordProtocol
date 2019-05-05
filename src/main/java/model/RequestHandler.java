@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 import static utilities.Utilities.sha1;
 
 
-public class RequestHandler implements Runnable {
+public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     private static final Logger logger = Logger.getLogger(RequestHandler.class.getName());
     private final ObjectInputStream in;
@@ -51,8 +51,9 @@ public class RequestHandler implements Runnable {
               example : RequestObj request = ((RequestObj) in.readObject()).handle(node);
             */
 
-            Message msg = ((Message) in.readObject());
+            ((Request) in.readObject()).handleRequest(this);
 
+            /*
             switch (msg.getMessage()) {
                 case "ping": {
                     String senderIp = msg.getProperties().getIpAddress();
@@ -65,94 +66,23 @@ public class RequestHandler implements Runnable {
                     System.out.println("------------------------------------------\n");
                 }
                 break;
-                case "check_predecessor": {
-                    String senderIp = msg.getProperties().getIpAddress();
-                    int senderPort = msg.getProperties().getPort();
-                    node.forward(node.getProperties(), senderIp, senderPort, "check_predecessor_reply", 0, 0, 0, null);
-                }
-                break;
-                case "check_predecessor_reply": {
-                    node.cancelCheckPredecessorTimer();
-                }
-                break;
-                case "fix_finger": {
-                    node.fixFingerSuccessor(msg.getProperties(), msg.getFixId(), msg.getFixIndex());
-                }
-                break;
-                case "fix_finger_reply": {
-                    // update the i-th finger
-                    node.updateFinger(msg.getFixIndex(), msg.getProperties());
-                }
-                break;
-                case "find_successor": {
-                    //search for the successor of the node received from the network
-                    node.findSuccessor(msg.getProperties());
-                }
-                break;
-                case "find_successor_reply":
-                case "update_successor": {
-                    //Set the successor of the current node to the one received from the network
-                    node.setSuccessor(msg.getProperties());
-                    node.askSuccessorForResources();
-                }
-                break;
-                case "predecessor": {
-                    //Send the predecessor of the current node to the one that asked for it
-                    String receiverIp = msg.getProperties().getIpAddress();
-                    int receiverPort = msg.getProperties().getPort();
 
-                    //TODO Check if it is the right behaviour
-                    node.forward(node.getPredecessor(), receiverIp, receiverPort, "predecessor_reply", 0, 0, 0, null);
 
-                }
-                break;
-                case "predecessor_reply": {
-                    //Once the predecessor is arrived, set it into the dedicated thread and call notify()
-                    //todo Check if a synchronized block is necessary
-                    node.finalizeStabilize(msg.getProperties());
-                }
-                break;
-                case "transfer_after_leave": {
-                    node.saveFile(msg.getFile());
-                }
-                break;
                 case "file_to_predecessor": {
-                    /* TODO check if inconsistency w.r.t. predecessor trigger
+                     TODO check if inconsistency w.r.t. predecessor trigger
                     if (sha1(msg.getFile().getName()) <= node.getPredecessor().getNodeId()) {
                         node.sendResource(node.getPredecessor().getIpAddress(), node.getPredecessor().getPort(), "file_to_predecessor", msg.getFile());
-                    } */
+                    }
                     node.saveFile(msg.getFile());
                 }
                 break;
-                case "distribute_resource": {
-                    node.distributeResource(msg.getProperties(),msg.getFile());
-                    //node.checkResources(); //TODO innesca cicli
-                }
-                break;
-                case "update_predecessor": {
-                    node.setPredecessor(msg.getProperties());
-                }
-                break;
-                case "lookup": {
-                    node.lookup(msg.getProperties(), msg.getKey());
-                }
-                break;
-                case "lookup_reply": {
-                    System.out.println("The resource " + msg.getKey() + " is contained by node " + msg.getProperties().getNodeId());
-                }
-                break;
-                case "notify": {
-                    node.notifySuccessor(msg.getProperties());
-                }
-                break;
-                case "ask_successor_resources":{
-                    node.giveResourcesToPredecessor(msg.getProperties());
-                }
 
-                break;
+
                 default:
                     logger.log(Level.SEVERE, "This request doesn't exist.");
+
             }
+            */
         } catch (EOFException | SocketException e) {
             if (!stop) {
                 close();
@@ -162,7 +92,7 @@ public class RequestHandler implements Runnable {
         }
     }
 
-    private void stop() {
+    private void stopping() {
         stop = true;
     }
 
@@ -170,7 +100,7 @@ public class RequestHandler implements Runnable {
      * Method that closes ClientHandler connection
      */
     private void close() {
-        stop();
+        stopping();
         if (out != null) {
             try {
                 out.close();
@@ -193,4 +123,100 @@ public class RequestHandler implements Runnable {
             System.err.println(e.getMessage());
         }
     }
+
+    //search for the successor of the node received from the network
+    @Override
+    public void handle(FindSuccessorRequest request) {
+        node.findSuccessor(request.getProperties());
+    }
+
+    @Override
+    public void handle(DistributeResourceRequest request) {
+        node.distributeResource(request.getProperties(),request.getFile());
+    }
+
+    @Override
+    public void handle(AskSuccessorResourcesRequest request) {
+        node.giveResourcesToPredecessor(request.getProperties());
+    }
+
+    @Override
+    public void handle(UpdatePredecessorRequest request) {
+        node.setPredecessor(request.getProperties());
+    }
+
+    @Override
+    public void handle(UpdateSuccessorRequest request) {
+        node.setSuccessor(request.getProperties());
+        node.askSuccessorForResources();
+    }
+
+    @Override
+    public void handle(FindSuccessorReplyRequest request) {
+        node.setSuccessor(request.getProperties());
+        node.askSuccessorForResources();
+    }
+
+    @Override
+    public void handle(FixFingerRequest request) {
+        node.fixFingerSuccessor(request.getProperties(), request.getFixId(), request.getFixIndex());
+    }
+
+    // update the i-th finger
+    @Override
+    public void handle(FixFingerReplyRequest request) {
+        node.updateFinger(request.getFixIndex(), request.getProperties());
+    }
+
+    @Override
+    public void handle(LookupRequest request) {
+        node.lookup(request.getProperties(), request.getKey());
+    }
+
+    @Override
+    public void handle(LookupRequestReply request) {
+        System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId());
+    }
+
+    @Override
+    public void handle(CheckPredecessorRequest request) {
+        String senderIp = request.getProperties().getIpAddress();
+        int senderPort = request.getProperties().getPort();
+        node.getForwarder().makeRequest( senderIp, senderPort, new CheckPredecessorReplyRequest(node.getProperties()));
+    }
+
+    @Override
+    public void handle(CheckPredecessorReplyRequest request) {
+        node.cancelCheckPredecessorTimer();
+    }
+
+    @Override
+    public void handle(TransferAfterLeaveRequest request) {
+        node.saveFile(request.getFile());
+    }
+
+    //Send the predecessor of the current node to the one that asked for it
+    @Override
+    public void handle(PredecessorRequest request) {
+
+        String receiverIp = request.getProperties().getIpAddress();
+        int receiverPort = request.getProperties().getPort();
+
+        //TODO Check if it is the right behaviour
+        node.getForwarder().makeRequest( receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor()));
+    }
+
+    //Once the predecessor is arrived, set it into the dedicated thread and call notify()
+    //todo Check if a synchronized block is necessary
+    @Override
+    public void handle(PredecessorReplyRequest request) {
+
+        node.finalizeStabilize(request.getProperties());
+    }
+
+    @Override
+    public void handle(NotifyRequest request) {
+        node.notifySuccessor(request.getProperties());
+    }
+
 }

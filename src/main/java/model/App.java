@@ -57,10 +57,10 @@ public class App {
                 case 6: // Look for a key
                     lookup();
                     break;
-                case 7: // Ping request
+                /*case 7: // Ping request
                     ping();
-                    break;
-                case 8:
+                    break;*/
+                case 7:
                     node.publishResources(knownIp);
                     break;
                 case 0: // Leave the network
@@ -81,11 +81,11 @@ public class App {
         System.out.println("4. The file key IDs and content contained by the current node but still not published;");
         System.out.println("5. The file key IDs and content contained by the current node according to network topology;");
         System.out.println("6. Lookup for a resource;");
-        System.out.println("7. Ping a node;");
-        System.out.println("8. Publish your resources on the network;");
+        //System.out.println("7. Ping a node;");
+        System.out.println("7. Publish your resources on the network;");
         System.out.println("0. Leave the network");
     }
-
+    /*
     private static void ping() {
         int port;
 
@@ -101,7 +101,7 @@ public class App {
             System.out.println("Please check the correctness of the input and try again");
         }
         System.out.println("------------------------------------------\n");
-    }
+    }*/
 
     private static void lookup() {
         System.out.println("Insert the key you are looking for (it must be in the range [0," + KEY_SIZE + "]):");

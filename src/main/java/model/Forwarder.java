@@ -64,10 +64,11 @@ public class Forwarder implements Runnable {
         checkUnusedSockets();
     }
 
-    public synchronized void makeRequest(NodeProperties nodeInformation, String ip, int port, String message, int fixId, int fixIndex, int lookupKey, File file) {
+    public synchronized void makeRequest(String ip,int port,Request request) {
+
+
 
         try {
-
             ObjectOutputStream out;
             ObjectInputStream in = null;
 
@@ -95,15 +96,17 @@ public class Forwarder implements Runnable {
             this.clientSocket = socketMap.get(ip + ":" + port);
 
             //Create the message and send it
-            Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey, file);
+            //Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey, file);
 
-            if (debug)
-                LOGGER.log(Level.FINE, "Target: " + sha1(ip + ":" + port) + " message:" + message);
+            /*if (debug)
+                LOGGER.log(Level.FINE, "Target: " + sha1(ip + ":" + port) + " message:" + message);*/
 
-            clientSocket.getOutputStream().writeObject(msg);
+
+            request(request);
+            /*clientSocket.getOutputStream().writeObject(msg);
             clientSocket.getOutputStream().flush();
+            clientSocket = null;*/
 
-            clientSocket = null;
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
             e.printStackTrace();
@@ -111,6 +114,16 @@ public class Forwarder implements Runnable {
             socketMap.remove(ip + ":" + port);
             clientSocket.close();
 
+        }
+    }
+
+    public void request(Request request) {
+
+        try {
+            clientSocket.getOutputStream().writeObject(request);
+            clientSocket.getOutputStream().reset();
+        } catch (IOException e) {
+            System.exit(0);
         }
     }
 
