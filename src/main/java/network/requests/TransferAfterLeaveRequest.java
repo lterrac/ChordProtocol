@@ -1,8 +1,10 @@
-package model;
+package network.requests;
+
+import network.RequestHandler;
 
 import java.io.File;
 
-public class TransferAfterLeaveRequest implements Request{
+public class TransferAfterLeaveRequest implements Request {
 
     private File file;
 

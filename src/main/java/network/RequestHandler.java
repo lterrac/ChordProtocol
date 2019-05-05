@@ -1,4 +1,7 @@
-package model;
+package network;
+
+import model.*;
+import network.requests.*;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -6,10 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static utilities.Utilities.sha1;
 
 
 public class RequestHandler extends Thread implements RequestHandlerInterface {
@@ -174,7 +174,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     }
 
     @Override
-    public void handle(LookupRequestReply request) {
+    public void handle(LookupReplyRequest request) {
         System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId());
     }
 

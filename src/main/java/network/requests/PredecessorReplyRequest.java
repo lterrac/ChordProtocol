@@ -1,13 +1,13 @@
-package model;
+package network.requests;
 
-import java.io.File;
+import model.NodeProperties;
+import network.RequestHandler;
 
-public class FindSuccessorRequest implements Request{
+public class PredecessorReplyRequest implements Request {
 
     private NodeProperties properties;
 
-
-    public FindSuccessorRequest(NodeProperties properties) {
+    public PredecessorReplyRequest(NodeProperties properties) {
         this.properties = properties;
     }
 
@@ -15,10 +15,8 @@ public class FindSuccessorRequest implements Request{
         return properties;
     }
 
-
     @Override
     public void handleRequest(RequestHandler handler) {
         handler.handle(this);
     }
-
 }

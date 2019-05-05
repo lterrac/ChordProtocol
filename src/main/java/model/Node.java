@@ -1,5 +1,9 @@
 package model;
 
+import network.Forwarder;
+import network.NodeSocketServer;
+import network.requests.*;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -80,15 +84,15 @@ public class Node {
     }
 
     // Getter
-    NodeProperties getProperties() {
+    public NodeProperties getProperties() {
         return properties;
     }
 
-    ServerSocket getServerSocket() {
+    public ServerSocket getServerSocket() {
         return serverSocket;
     }
 
-    NodeProperties getPredecessor() {
+    public NodeProperties getPredecessor() {
         return predecessor;
     }
 
@@ -117,7 +121,7 @@ public class Node {
      *
      * @param node the successor
      */
-    void setSuccessor(NodeProperties node) {
+    public void setSuccessor(NodeProperties node) {
         // TODO synchronized??
         this.fingers[0] = node;
 
@@ -150,7 +154,7 @@ public class Node {
      *
      * @param newNode is the node to be set as predecessor for the successor
      */
-    void finalizeStabilize(NodeProperties newNode) {
+    public void finalizeStabilize(NodeProperties newNode) {
         stabilize.finalizeStabilize(newNode);
     }
 
@@ -245,7 +249,6 @@ public class Node {
         String ipAddress = getCurrentIp();
         initializeNode(ipAddress, port);
         forwarder = new Forwarder(properties.getNodeId());
-        createResources();
     }
 
     private void initializeNode(String ipAddress, int port) {
@@ -254,28 +257,10 @@ public class Node {
         this.predecessor = null;
     }
 
-    private void createResources() {
-        for (int i = 0; i < RESOURCES_NUMBER; i++) {
-            String filename = "Node" + properties.getNodeId() + "-File" + i;
-            File f = new File("./node" + this.getProperties().getNodeId()+"/offline/" + filename);
-            if (!f.getParentFile().exists())
-                f.getParentFile().mkdirs();
-            if (!f.exists()) {
-                try {
-                    f.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        File g = new File("./node" + this.getProperties().getNodeId()+"/online/" + "toCreateDirectory");
-        if (!g.getParentFile().exists())
-            g.getParentFile().mkdirs();
-    }
 
     public void notifyNeighbours() {
         forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getPort(), new UpdateSuccessorRequest(successor()));
-        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new UpdatePredecessorRequest (getPredecessor()));
+        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new UpdatePredecessorRequest(getPredecessor()));
     }
 
 
@@ -297,7 +282,7 @@ public class Node {
      *
      * @param predecessor node that could be the predecessor
      */
-    void notifySuccessor(NodeProperties predecessor) {
+    public void notifySuccessor(NodeProperties predecessor) {
         if ((this.predecessor == null || predecessor.isInIntervalStrict(this.predecessor.getNodeId(), properties.getNodeId()))) {
             setPredecessor(predecessor);
         }
@@ -308,7 +293,7 @@ public class Node {
      *
      * @param askingNode is the node that asked for findings its successor
      */
-    void findSuccessor(NodeProperties askingNode) {
+    public void findSuccessor(NodeProperties askingNode) {
 
         // check if there are two nodes with the same Id
         if (askingNode.getNodeId() == properties.getNodeId())
@@ -334,7 +319,7 @@ public class Node {
      * @param fixId      is the upper bound Id of the fixIndex-th row of the finger table
      * @param fixIndex   is the index of the finger table to be updated
      */
-    void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
+    public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
             forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new FixFingerReplyRequest(successor(), fixId, fixIndex));
@@ -370,10 +355,10 @@ public class Node {
      *
      * @param key is the hash of the resource you're looking for in the net
      */
-    void lookup(NodeProperties askingNode, int key) {
+    public void lookup(NodeProperties askingNode, int key) {
 
         if (isInIntervalInteger( properties.getNodeId(),key,successor().getNodeId())){
-            forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new LookupRequestReply(successor(),key));
+            forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new LookupReplyRequest(successor(),key));
         } else {
             NodeProperties closest = closestPrecedingNode(key);
 
@@ -381,7 +366,7 @@ public class Node {
             if (!closest.equals(properties))
                 forwarder.makeRequest( closest.getIpAddress(), closest.getPort(), new LookupRequest(askingNode,key));
             else
-                forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new LookupRequestReply(properties,key));
+                forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new LookupReplyRequest(properties,key));
         }
     }
 
@@ -406,7 +391,7 @@ public class Node {
     /**
      * Cancel the timer that has been set before sending the request to check if the predecessor is still alive
      */
-    void cancelCheckPredecessorTimer() {
+    public void cancelCheckPredecessorTimer() {
         checkPredecessor.cancelTimer();
     }
 
@@ -440,7 +425,7 @@ public class Node {
      * @param i       is the index of the table
      * @param newNode is the new value for the row with index i in the table
      */
-    void updateFinger(int i, NodeProperties newNode) {
+    public void updateFinger(int i, NodeProperties newNode) {
         synchronized (fingers) {
             fingers[i] = newNode;
         }

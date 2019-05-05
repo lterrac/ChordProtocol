@@ -1,6 +1,8 @@
-package model;
+package network;
 
-import java.io.File;
+
+import network.requests.Request;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -64,7 +66,7 @@ public class Forwarder implements Runnable {
         checkUnusedSockets();
     }
 
-    public synchronized void makeRequest(String ip,int port,Request request) {
+    public synchronized void makeRequest(String ip, int port, Request request) {
 
 
 

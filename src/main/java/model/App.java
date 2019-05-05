@@ -1,6 +1,7 @@
 package model;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.logging.Logger;
 
@@ -15,6 +16,8 @@ public class App {
     private static Scanner intScanner = new Scanner(System.in); // To avoid burning new line characters
     private static String knownIp;
     private static int knownPort;
+    static final int RESOURCES_NUMBER = 5;
+    private static boolean resourcesCreated;
     public static void main(String[] args) {
         System.out.println("Enter \"new\" if you are the Net Generator, otherwise enter IP and port (\"IP\":\"port\") of the Node you know.");
 
@@ -49,10 +52,16 @@ public class App {
                     node.printPredecessorAndSuccessor();
                     break;
                 case 4: // offline resources contained by the node
-                    printResources("offline");
+                    if(resourcesCreated)
+                        printResources("offline");
+                    else
+                        printError();
                     break;
                 case 5: // online resources contained by the node
-                    printResources("online");
+                    if(resourcesCreated)
+                        printResources("online");
+                    else
+                        printError();
                     break;
                 case 6: // Look for a key
                     lookup();
@@ -61,7 +70,14 @@ public class App {
                     ping();
                     break;*/
                 case 7:
-                    node.publishResources(knownIp);
+                    resourcesCreated=true;
+                    createResources();
+                    break;
+                case 8:
+                    if(resourcesCreated)
+                        node.publishResources(knownIp);
+                    else
+                        printError();
                     break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
@@ -82,7 +98,8 @@ public class App {
         System.out.println("5. The file key IDs and content contained by the current node according to network topology;");
         System.out.println("6. Lookup for a resource;");
         //System.out.println("7. Ping a node;");
-        System.out.println("7. Publish your resources on the network;");
+        System.out.println("7. Create your offline resources;");
+        System.out.println("8. Publish your resources on the network;");
         System.out.println("0. Leave the network");
     }
     /*
@@ -131,5 +148,29 @@ public class App {
             System.out.println("No resources available");
         }
         //System.out.println("------------------------------------------\n");
+    }
+
+    private static void createResources() {
+        for (int i = 0; i < RESOURCES_NUMBER; i++) {
+            String filename = "Node" + node.getProperties().getNodeId() + "-File" + i;
+            File f = new File("./node" + node.getProperties().getNodeId()+"/offline/" + filename);
+            if (!f.getParentFile().exists())
+                f.getParentFile().mkdirs();
+            if (!f.exists()) {
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        File g = new File("./node" + node.getProperties().getNodeId()+"/online/" + "toCreateDirectory");
+        if (!g.getParentFile().exists())
+            g.getParentFile().mkdirs();
+        System.out.println("You correctly created your offline resources.");
+    }
+
+    private static void printError(){
+        System.out.println("You need to create your own resources in order to see or publish them.");
     }
 }

@@ -1,4 +1,6 @@
-package model;
+package network;
+
+import model.Node;
 
 import java.io.IOException;
 import java.net.ServerSocket;

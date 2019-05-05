@@ -12,7 +12,7 @@ public class NodeProperties implements Serializable {
     static final int FIX_PERIOD = 200; // fixFingers period
     static final int CHECK_SOCKET_PERIOD = 10000; // check for unused sockets period
     static final int STABILIZE_PERIOD = 200; // stabilize period
-    static final int RESOURCES_NUMBER = 5;
+
 
     private final int nodeId;
     private String ipAddress;
@@ -39,15 +39,15 @@ public class NodeProperties implements Serializable {
             return value > firstBound || value <= secondBound;
     }
 
-    String getIpAddress() {
+    public String getIpAddress() {
         return ipAddress;
     }
 
-    int getPort() {
+    public int getPort() {
         return port;
     }
 
-    int getNodeId() {
+    public int getNodeId() {
         return nodeId;
     }
 

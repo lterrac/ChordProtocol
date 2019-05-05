@@ -1,4 +1,6 @@
-package model;
+package network;
+
+import network.requests.*;
 
 public interface RequestHandlerInterface {
     void handle(FindSuccessorRequest request);
@@ -10,7 +12,7 @@ public interface RequestHandlerInterface {
     void handle(FixFingerRequest request);
     void handle(FixFingerReplyRequest request);
     void handle(LookupRequest request);
-    void handle(LookupRequestReply request);
+    void handle(LookupReplyRequest request);
     void handle(CheckPredecessorRequest request);
     void handle(CheckPredecessorReplyRequest request);
     void handle(TransferAfterLeaveRequest request);

@@ -1,4 +1,6 @@
-package model;
+package network.requests;
+
+import network.RequestHandler;
 
 import java.io.Serializable;
 

@@ -1,12 +1,15 @@
-package model;
+package network.requests;
 
-public class FixFingerReplyRequest implements Request {
+import model.NodeProperties;
+import network.RequestHandler;
+
+public class FixFingerRequest implements Request {
 
     private NodeProperties properties;
     private int fixId;
     private int fixIndex;
 
-    public FixFingerReplyRequest(NodeProperties properties, int fixId, int fixIndex) {
+    public FixFingerRequest(NodeProperties properties, int fixId, int fixIndex) {
         this.properties = properties;
         this.fixId = fixId;
         this.fixIndex = fixIndex;
@@ -23,6 +26,7 @@ public class FixFingerReplyRequest implements Request {
     public int getFixIndex() {
         return fixIndex;
     }
+
     @Override
     public void handleRequest(RequestHandler handler) {
         handler.handle(this);

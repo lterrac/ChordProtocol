@@ -1,10 +1,13 @@
-package model;
+package network.requests;
 
-public class UpdateSuccessorRequest implements Request {
+import model.NodeProperties;
+import network.RequestHandler;
+
+public class UpdatePredecessorRequest implements Request {
 
     private NodeProperties properties;
 
-    public UpdateSuccessorRequest(NodeProperties properties) {
+    public UpdatePredecessorRequest(NodeProperties properties) {
 
         this.properties = properties;
     }

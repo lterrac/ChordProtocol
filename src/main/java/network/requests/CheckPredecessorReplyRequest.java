@@ -1,10 +1,13 @@
-package model;
+package network.requests;
 
-public class NotifyRequest implements Request{
+import model.NodeProperties;
+import network.RequestHandler;
+
+public class CheckPredecessorReplyRequest implements Request {
 
     private NodeProperties properties;
 
-    public NotifyRequest(NodeProperties properties) {
+    public CheckPredecessorReplyRequest(NodeProperties properties) {
         this.properties = properties;
     }
 

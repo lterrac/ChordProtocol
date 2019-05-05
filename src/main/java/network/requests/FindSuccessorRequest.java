@@ -1,11 +1,14 @@
-package model;
+package network.requests;
 
-public class UpdatePredecessorRequest implements Request {
+import model.NodeProperties;
+import network.RequestHandler;
+
+public class FindSuccessorRequest implements Request {
 
     private NodeProperties properties;
 
-    public UpdatePredecessorRequest(NodeProperties properties) {
 
+    public FindSuccessorRequest(NodeProperties properties) {
         this.properties = properties;
     }
 
@@ -13,8 +16,10 @@ public class UpdatePredecessorRequest implements Request {
         return properties;
     }
 
+
     @Override
     public void handleRequest(RequestHandler handler) {
         handler.handle(this);
     }
+
 }

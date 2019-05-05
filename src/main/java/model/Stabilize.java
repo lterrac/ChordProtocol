@@ -1,5 +1,8 @@
 package model;
 
+import network.requests.NotifyRequest;
+import network.requests.PredecessorRequest;
+
 public class Stabilize implements Runnable {
 
     private final Node node;

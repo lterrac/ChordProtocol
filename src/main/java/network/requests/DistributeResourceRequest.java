@@ -1,8 +1,11 @@
-package model;
+package network.requests;
+
+import model.NodeProperties;
+import network.RequestHandler;
 
 import java.io.File;
 
-public class DistributeResourceRequest implements Request{
+public class DistributeResourceRequest implements Request {
 
     private File file;
     private NodeProperties properties;

@@ -1,10 +1,14 @@
-package model;
+package network.requests;
 
-public class FindSuccessorReplyRequest implements Request{
+
+import model.NodeProperties;
+import network.RequestHandler;
+
+public class PredecessorRequest implements Request {
 
     private NodeProperties properties;
 
-    public FindSuccessorReplyRequest(NodeProperties properties) {
+    public PredecessorRequest(NodeProperties properties) {
         this.properties = properties;
     }
 

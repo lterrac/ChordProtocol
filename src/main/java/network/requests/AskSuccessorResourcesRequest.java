@@ -1,6 +1,10 @@
-package model;
+package network.requests;
 
-public class AskSuccessorResourcesRequest implements Request{
+import model.NodeProperties;
+import network.RequestHandler;
+
+public class AskSuccessorResourcesRequest implements Request {
+
     private NodeProperties nodeProperties;
 
     public AskSuccessorResourcesRequest(NodeProperties nodeProperties) {

@@ -1,10 +1,14 @@
-package model;
+package network.requests;
 
-public class LookupRequest implements Request{
+import model.NodeProperties;
+import network.RequestHandler;
+
+public class LookupReplyRequest implements Request {
+
     private NodeProperties properties;
     private int key;
 
-    public LookupRequest(NodeProperties properties, int key) {
+    public LookupReplyRequest(NodeProperties properties, int key) {
         this.properties = properties;
         this.key = key;
     }
@@ -19,6 +23,6 @@ public class LookupRequest implements Request{
 
     @Override
     public void handleRequest(RequestHandler handler) {
-        handler.handle(this);
+        handler.handle(this );
     }
 }
