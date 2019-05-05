@@ -48,17 +48,20 @@ public class App {
                 case 3: // predecessor and successor coordinates
                     node.printPredecessorAndSuccessor();
                     break;
-                case 4: // resources contained by the node
-                    printResources();
+                case 4: // offline resources contained by the node
+                    printResources("offline");
                     break;
-                case 5: // Look for a key
+                case 5: // online resources contained by the node
+                    printResources("online");
+                    break;
+                case 6: // Look for a key
                     lookup();
                     break;
-                case 6: // Ping request
+                case 7: // Ping request
                     ping();
                     break;
-                case 7:
-                    node.forwardResources(knownIp,knownPort);
+                case 8:
+                    node.publishResources(knownIp);
                     break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
@@ -75,10 +78,11 @@ public class App {
         System.out.println("1. Own IP address, port of the server and ID");
         System.out.println("2. Own finger table");
         System.out.println("3. The IP address, port of the server and ID of the successor and predecessor;");
-        System.out.println("4. The file key IDs and content contained by the current node;");
-        System.out.println("5. Lookup for a resource;");
-        System.out.println("6. Ping a node;");
-        System.out.println("7. Publish your resources on the net");
+        System.out.println("4. The file key IDs and content contained by the current node but still not published;");
+        System.out.println("5. The file key IDs and content contained by the current node according to network topology;");
+        System.out.println("6. Lookup for a resource;");
+        System.out.println("7. Ping a node;");
+        System.out.println("8. Publish your resources on the network;");
         System.out.println("0. Leave the network");
     }
 
@@ -114,18 +118,18 @@ public class App {
         System.exit(0);
     }
 
-    private static void printResources(){
-        File folder = new File("./node" + node.getProperties().getNodeId());
+    private static void printResources(String onOrOff){
+        File folder = new File("./node" + node.getProperties().getNodeId()+"/"+onOrOff);
         File[] allFiles = folder.listFiles();
 
-        if (allFiles != null) {
-            System.out.println(allFiles.length + " resources available in node "+ node.getProperties().getNodeId() + ":");
+        if (allFiles != null || allFiles.length==0) {
+            System.out.println(allFiles.length + " resources available "+onOrOff+" in node "+ node.getProperties().getNodeId() + ":");
             for (File allFile : allFiles) {
                 System.out.println("SHA: " + sha1(allFile.getName()) + "\tName: " + allFile.getName());
             }
         } else {
-            System.out.println("No resources available yet.");
+            System.out.println("No resources available");
         }
-        System.out.println("------------------------------------------\n");
+        //System.out.println("------------------------------------------\n");
     }
 }

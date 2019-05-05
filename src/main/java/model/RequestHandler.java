@@ -93,6 +93,7 @@ public class RequestHandler implements Runnable {
                 case "update_successor": {
                     //Set the successor of the current node to the one received from the network
                     node.setSuccessor(msg.getProperties());
+                    node.askSuccessorForResources();
                 }
                 break;
                 case "predecessor": {
@@ -124,7 +125,7 @@ public class RequestHandler implements Runnable {
                 }
                 break;
                 case "distribute_resource": {
-                    node.distributeResource(msg.getFile());
+                    node.distributeResource(msg.getProperties(),msg.getFile());
                     //node.checkResources(); //TODO innesca cicli
                 }
                 break;
@@ -143,6 +144,11 @@ public class RequestHandler implements Runnable {
                 case "notify": {
                     node.notifySuccessor(msg.getProperties());
                 }
+                break;
+                case "ask_successor_resources":{
+                    node.giveResourcesToPredecessor(msg.getProperties());
+                }
+
                 break;
                 default:
                     logger.log(Level.SEVERE, "This request doesn't exist.");
