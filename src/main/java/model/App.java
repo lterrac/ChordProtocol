@@ -58,10 +58,7 @@ public class App {
                         printError();
                     break;
                 case 5: // online resources contained by the node
-                    if(resourcesCreated)
-                        printResources("online");
-                    else
-                        printError();
+                    printResources("online");
                     break;
                 case 6: // Look for a key
                     lookup();
@@ -70,12 +67,17 @@ public class App {
                     ping();
                     break;*/
                 case 7:
-                    resourcesCreated=true;
-                    createResources();
+                    if(resourcesCreated==false) {
+                        createResources();
+                        resourcesCreated = true;
+                    }
+                    else{
+                        System.out.println("You already created your resources!");
+                    }
                     break;
                 case 8:
                     if(resourcesCreated)
-                        node.publishResources(knownIp);
+                        node.publishResources();
                     else
                         printError();
                     break;
@@ -154,8 +156,8 @@ public class App {
         for (int i = 0; i < RESOURCES_NUMBER; i++) {
             String filename = "Node" + node.getProperties().getNodeId() + "-File" + i;
             File f = new File("./node" + node.getProperties().getNodeId()+"/offline/" + filename);
-            if (!f.getParentFile().exists())
-                f.getParentFile().mkdirs();
+            /*if (!f.getParentFile().exists())
+                f.getParentFile().mkdirs();*/
             if (!f.exists()) {
                 try {
                     f.createNewFile();
@@ -164,9 +166,9 @@ public class App {
                 }
             }
         }
-        File g = new File("./node" + node.getProperties().getNodeId()+"/online/" + "toCreateDirectory");
+        /*File g = new File("./node" + node.getProperties().getNodeId()+"/online/" + "toCreateDirectory");
         if (!g.getParentFile().exists())
-            g.getParentFile().mkdirs();
+            g.getParentFile().mkdirs();*/
         System.out.println("You correctly created your offline resources.");
     }
 

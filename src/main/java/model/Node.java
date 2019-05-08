@@ -99,7 +99,7 @@ public class Node {
     // Setter
     public void setPredecessor(NodeProperties predecessor) {
 
-        this.predecessor=predecessor;
+        this.predecessor = predecessor;
 
         /*if (predecessor == null) {
             this.predecessor = null;
@@ -111,7 +111,6 @@ public class Node {
             this.predecessor = predecessor;
             distributePredecessor();
         }*/
-
 
 
     }
@@ -195,7 +194,7 @@ public class Node {
      */
     void join(String ip, int port) {
         startNode();
-        forwarder.makeRequest( ip, port, new FindSuccessorRequest(properties));
+        forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties));
 
         startThreads();
         nodeSocketServer = new NodeSocketServer(this);
@@ -203,11 +202,20 @@ public class Node {
         new Thread(nodeSocketServer).start();
     }
 
-    public void publishResources(String ip) {
+    public boolean isNodeAlone() {
+        if (predecessor.equals(properties)) {
+            if (properties.equals(successor())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void publishResources() {
 
         //case in which you're the only node in the network, so your files are moved from the offline folder to the online one;
-        if(ip==null){
-            File folder = new File("./node" + this.getProperties().getNodeId()+"/offline");
+        if (isNodeAlone()) {
+            File folder = new File("./node" + this.getProperties().getNodeId() + "/offline");
             File[] allFiles = folder.listFiles();
             for (File file : allFiles) {
                 saveFile(file);
@@ -219,7 +227,7 @@ public class Node {
             File folder = new File("./node" + this.getProperties().getNodeId() + "/offline");
             File[] allFiles = folder.listFiles();
             for (File file : allFiles) {
-                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null,file));
+                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null, file));
                 file.delete();
             }
         }
@@ -227,17 +235,17 @@ public class Node {
 
     }
 
-    public void askSuccessorForResources(){
+    public void askSuccessorForResources() {
         forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new AskSuccessorResourcesRequest(this.getProperties()));
     }
 
-    public void giveResourcesToPredecessor(NodeProperties nodeProperties){
+    public void giveResourcesToPredecessor(NodeProperties nodeProperties) {
         File folder = new File("./node" + this.getProperties().getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
         for (int i = 0; i < allFiles.length; i++) {
             File f = allFiles[i];
-            if(isInIntervalInteger(sha1(allFiles[i].getName()),nodeProperties.getNodeId(),properties.getNodeId())){
-                forwarder.makeRequest( nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties,f));
+            if (checkResourcesForPredecessor(sha1(allFiles[i].getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
+                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties, f));
                 f.delete();
             }
         }
@@ -249,6 +257,16 @@ public class Node {
         String ipAddress = getCurrentIp();
         initializeNode(ipAddress, port);
         forwarder = new Forwarder(properties.getNodeId());
+        foldersCreation();
+    }
+
+    private void foldersCreation() {
+        File f = new File("./node" + properties.getNodeId() + "/offline/offlineFolderCreation");
+        if (!f.getParentFile().exists())
+            f.getParentFile().mkdirs();
+        File g = new File("./node" + this.getProperties().getNodeId() + "/online/" + "onlineFolderCreation");
+        if (!g.getParentFile().exists())
+            g.getParentFile().mkdirs();
     }
 
     private void initializeNode(String ipAddress, int port) {
@@ -306,7 +324,7 @@ public class Node {
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties))
-                forwarder.makeRequest( closest.getIpAddress(), closest.getPort(), new FindSuccessorRequest(askingNode));
+                forwarder.makeRequest(closest.getIpAddress(), closest.getPort(), new FindSuccessorRequest(askingNode));
             else
                 forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getPort(), new FindSuccessorReplyRequest(properties));
         }
@@ -322,7 +340,7 @@ public class Node {
     public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
 
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
-            forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new FixFingerReplyRequest(successor(), fixId, fixIndex));
+            forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getPort(), new FixFingerReplyRequest(successor(), fixId, fixIndex));
         } else {
             NodeProperties closest = closestPrecedingNode(fixId);
 
@@ -330,7 +348,7 @@ public class Node {
             if (!closest.equals(properties)) {
                 forwarder.makeRequest(closest.getIpAddress(), closest.getPort(), new FixFingerRequest(askingNode, fixId, fixIndex));
             } else {
-                forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(),new FixFingerReplyRequest(properties, fixId, fixIndex));
+                forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getPort(), new FixFingerReplyRequest(properties, fixId, fixIndex));
             }
         }
     }
@@ -357,16 +375,16 @@ public class Node {
      */
     public void lookup(NodeProperties askingNode, int key) {
 
-        if (isInIntervalInteger( properties.getNodeId(),key,successor().getNodeId())){
-            forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new LookupReplyRequest(successor(),key));
+        if (isInIntervalInteger(properties.getNodeId(), key, successor().getNodeId())) {
+            forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getPort(), new LookupReplyRequest(successor(), key));
         } else {
             NodeProperties closest = closestPrecedingNode(key);
 
             //if the closestPrecedingNode is not the same as the current Node (Happens only when there is only one node in the net
             if (!closest.equals(properties))
-                forwarder.makeRequest( closest.getIpAddress(), closest.getPort(), new LookupRequest(askingNode,key));
+                forwarder.makeRequest(closest.getIpAddress(), closest.getPort(), new LookupRequest(askingNode, key));
             else
-                forwarder.makeRequest( askingNode.getIpAddress(), askingNode.getPort(), new LookupReplyRequest(properties,key));
+                forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getPort(), new LookupReplyRequest(properties, key));
         }
     }
 
@@ -432,7 +450,7 @@ public class Node {
     }
 
     void checkPredecessor() {
-        forwarder.makeRequest( predecessor.getIpAddress(), predecessor.getPort(), new CheckPredecessorRequest(properties));
+        forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getPort(), new CheckPredecessorRequest(properties));
     }
 
     boolean isPredecessorSet() {
@@ -521,11 +539,10 @@ public class Node {
             }
         }
     }*/
-
-    public void distributeResource(NodeProperties nodeProperties,File file) {
+    public void distributeResource(NodeProperties nodeProperties, File file) {
 
         //called when resources are published on purpose
-        if(nodeProperties==null) {
+        if (nodeProperties == null) {
             int fileId = sha1(file.getName());
 
             // if the resource must be kept
@@ -541,7 +558,7 @@ public class Node {
             if (isInIntervalInteger(properties.getNodeId(), fileId, successor().getNodeId())) {
                 /*System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE SUCCESSOR______________");
                 System.out.println("File " + fileId + " to " + successor().getNodeId());*/
-                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(),new DistributeResourceRequest(null,file));
+                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null, file));
                 return;
             }
 
@@ -553,7 +570,7 @@ public class Node {
                 if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound)) {
                     /*System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE FOR______________");
                     System.out.println("File " + fileId + " to " + fingers[i + 1].getNodeId());*/
-                    forwarder.makeRequest(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), new DistributeResourceRequest(null,file));
+                    forwarder.makeRequest(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), new DistributeResourceRequest(null, file));
                     return;
                 }
 
@@ -563,14 +580,14 @@ public class Node {
             if (fingers[highestIndex].getNodeId() != properties.getNodeId()) {
                 /*System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE LAST______________");
                 System.out.println("File " + fileId + " to " + fingers[highestIndex].getNodeId());*/
-                forwarder.makeRequest(fingers[highestIndex].getIpAddress(), fingers[highestIndex].getPort(), new DistributeResourceRequest(null,file));
+                forwarder.makeRequest(fingers[highestIndex].getIpAddress(), fingers[highestIndex].getPort(), new DistributeResourceRequest(null, file));
             } else {
                 saveFile(file); // temporarily save the file
             }
         }
 
         //called when a new node ask the successor for its resources, so it receives them and saves them
-        else{
+        else {
             saveFile(file);
         }
     }
@@ -624,7 +641,7 @@ public class Node {
     }*/
 
     public void transferOnLeave() {
-        File folder = new File("./node" + properties.getNodeId()+"/online");
+        File folder = new File("./node" + properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
 
         // TODO: after the switch to the Visitor pattern, send them as a list
