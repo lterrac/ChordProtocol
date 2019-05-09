@@ -26,6 +26,7 @@ import static utilities.Utilities.sha1;
 public class Node {
 
     private static final Logger logger = Logger.getLogger(Node.class.getName());
+
     /**
      * Finger table of the node
      */
@@ -35,10 +36,6 @@ public class Node {
      * Represents the "client side" of a node. It sends requests to other nodes
      */
     private Forwarder forwarder;
-
-    public Forwarder getForwarder() {
-        return forwarder;
-    }
 
     /**
      * Contains information about the node
@@ -66,6 +63,9 @@ public class Node {
     private Stabilize stabilize;
     private NodeProperties predecessor;
 
+    /**
+     * Socket server for accepting new socket connections
+     */
     private NodeSocketServer nodeSocketServer;
     private ServerSocket serverSocket;
 
@@ -96,7 +96,22 @@ public class Node {
         return predecessor;
     }
 
+    public Forwarder getForwarder() {
+        return forwarder;
+    }
+
+    /**
+     * Get the finger 0 of the finger table
+     *
+     * @return Node successor
+     */
+    NodeProperties successor() {
+        return fingers[0];
+    }
+
+
     // Setter
+
     public void setPredecessor(NodeProperties predecessor) {
 
         this.predecessor = predecessor;
@@ -111,8 +126,6 @@ public class Node {
             this.predecessor = predecessor;
             distributePredecessor();
         }*/
-
-
     }
 
     /**
@@ -124,10 +137,6 @@ public class Node {
         // TODO synchronized??
         this.fingers[0] = node;
 
-    }
-
-    NodeProperties successor() {
-        return fingers[0];
     }
 
     /**
@@ -178,7 +187,7 @@ public class Node {
     /**
      * Create a new Chord Ring
      */
-    void create() {
+    public void create() {
 
         startNode();
 
@@ -192,7 +201,7 @@ public class Node {
     /**
      * Join a Ring containing the known Node
      */
-    void join(String ip, int port) {
+    public void join(String ip, int port) {
         startNode();
         forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties));
 
@@ -202,15 +211,22 @@ public class Node {
         new Thread(nodeSocketServer).start();
     }
 
-    public boolean isNodeAlone() {
+    /**
+     * Check if the current node is the last in the network
+     *
+     * @return true if it is the last one, otherwise false
+     */
+    private boolean isNodeAlone() {
         if (predecessor.equals(properties)) {
-            if (properties.equals(successor())) {
-                return true;
-            }
+            return properties.equals(successor());
         }
         return false;
     }
 
+    /**
+     * Pubblish the resources into the network.
+     * It moves them from the folder "/offline" to "/online"
+     */
     public void publishResources() {
 
         //case in which you're the only node in the network, so your files are moved from the offline folder to the online one;
@@ -235,22 +251,36 @@ public class Node {
 
     }
 
+    /**
+     * Ask to the successor if it holds some resources that needs to be managed by the current node
+     */
     public void askSuccessorForResources() {
         forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new AskSuccessorResourcesRequest(this.getProperties()));
     }
 
+    /**
+     * Check if some file needs to be managed by the predecessor and in case sends the files back and deletes its copy.
+     * The predecessor is passed as a parameter because, when a node joins the network, {@link #predecessor} may not
+     * be already set by the {@link #notifySuccessor(NodeProperties)}
+     *
+     * @param nodeProperties predecessor of the node
+     */
     public void giveResourcesToPredecessor(NodeProperties nodeProperties) {
         File folder = new File("./node" + this.getProperties().getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
-        for (int i = 0; i < allFiles.length; i++) {
-            File f = allFiles[i];
-            if (checkResourcesForPredecessor(sha1(allFiles[i].getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
+        for (File f : allFiles) {
+            if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
                 forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties, f));
                 f.delete();
             }
         }
     }
 
+    /**
+     * Creates the primary classes of the node.
+     * Create : - ServerSocket to accept incoming connections
+     *          - Set
+     */
     private void startNode() {
         serverSocket = createServerSocket();
         int port = serverSocket.getLocalPort();
@@ -269,13 +299,23 @@ public class Node {
             g.getParentFile().mkdirs();
     }
 
+    /**
+     * Initialize the attributes of the node:
+     *      - Creates the {@link NodeProperties} of the node
+     *      - Set the {@link #successor} to the node itself
+     *      - Set the {@link #predecessor} to null
+     * @param ipAddress IP of the node
+     * @param port Port on which the node is listening
+     */
     private void initializeNode(String ipAddress, int port) {
         this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
         setSuccessor(this.properties);
         this.predecessor = null;
     }
 
-
+    /**
+     * TODO Non ne ho idea :)
+     */
     public void notifyNeighbours() {
         forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getPort(), new UpdateSuccessorRequest(successor()));
         forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new UpdatePredecessorRequest(getPredecessor()));
@@ -388,6 +428,10 @@ public class Node {
         }
     }
 
+    /**
+     * Save a file into the "/online" folder
+     * @param file File that has to be saved
+     */
     public void saveFile(File file) {
         FileOutputStream out = null;
         try {
@@ -413,7 +457,7 @@ public class Node {
         checkPredecessor.cancelTimer();
     }
 
-    /**
+    /** TODO Create again forward() ???
      * Forward a request to a client
      *
      * param targetNode is the {@code NodeProperties} information
@@ -449,15 +493,22 @@ public class Node {
         }
     }
 
+    /**
+     * Send a message to {@link #predecessor} to check if it is alive
+     */
     void checkPredecessor() {
         forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getPort(), new CheckPredecessorRequest(properties));
     }
 
+    /**
+     * Check if {@link #predecessor} is set
+     * @return true if it is not null, otherwise false
+     */
     boolean isPredecessorSet() {
         return predecessor != null;
     }
 
-    void printServerCoordinates() {
+    public void printServerCoordinates() {
         System.out.println("Server coordinates:");
         System.out.println("ID: " + properties.getNodeId());
         System.out.println("Ip: " + properties.getIpAddress());
@@ -467,7 +518,10 @@ public class Node {
         System.out.println("------------------------------------------\n");
     }
 
-    void printFingerTable() {
+    /**
+     * Prints the finger table
+     */
+    public void printFingerTable() {
         int limit = (int) Math.pow(2, KEY_SIZE);
         int bound;
         System.out.println("Finger table node id " + properties.getNodeId() + ":");
@@ -476,7 +530,7 @@ public class Node {
         for (int i = 0; i < KEY_SIZE; i++) {
             if (fingers[i] != null) {
                 bound = (int) (Math.pow(2, i) + properties.getNodeId()) % limit;
-                System.out.println("[" + i + "]\t" + String.valueOf(fingers[i].getNodeId()) + "\t\t" + bound);
+                System.out.println("[" + i + "]\t" + fingers[i].getNodeId() + "\t\t" + bound);
             } else {
                 System.out.println("-");
             }
@@ -485,7 +539,10 @@ public class Node {
         System.out.println("------------------------------------------\n");
     }
 
-    void printPredecessorAndSuccessor() {
+    /**
+     * Print successor and predecessor of the node
+     */
+    public void printPredecessorAndSuccessor() {
 
         System.out.println("Current node ID: " + properties.getNodeId());
         System.out.println();

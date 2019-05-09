@@ -1,4 +1,6 @@
-package model;
+package app;
+
+import model.Node;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,8 +18,9 @@ public class App {
     private static Scanner intScanner = new Scanner(System.in); // To avoid burning new line characters
     private static String knownIp;
     private static int knownPort;
-    static final int RESOURCES_NUMBER = 5;
+    private static final int RESOURCES_NUMBER = 5;
     private static boolean resourcesCreated;
+
     public static void main(String[] args) {
         System.out.println("Enter \"new\" if you are the Net Generator, otherwise enter IP and port (\"IP\":\"port\") of the Node you know.");
 
@@ -67,7 +70,7 @@ public class App {
                     ping();
                     break;*/
                 case 7:
-                    if(resourcesCreated==false) {
+                    if (!resourcesCreated) {
                         createResources();
                         resourcesCreated = true;
                     }
