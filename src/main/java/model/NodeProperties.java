@@ -8,10 +8,11 @@ import java.io.Serializable;
 public class NodeProperties implements Serializable {
 
     public static final int KEY_SIZE = 8; // size of the keys
-    static final int CHECK_PERIOD = 1000; // waiting time for the checkPredecessor request
-    static final int FIX_PERIOD = 1000; // fixFingers period
-    static final int STABILIZE_PERIOD = 1000; // stabilize period
-    static final int RESOURCESNUMBER = 10;
+    static final int CHECK_PERIOD = 200; // waiting time for the checkPredecessor request
+    static final int FIX_PERIOD = 200; // fixFingers period
+    static final int CHECK_SOCKET_PERIOD = 10000; // check for unused sockets period
+    static final int STABILIZE_PERIOD = 200; // stabilize period
+
 
     private final int nodeId;
     private String ipAddress;
@@ -38,15 +39,23 @@ public class NodeProperties implements Serializable {
             return value > firstBound || value <= secondBound;
     }
 
-    String getIpAddress() {
+    static boolean checkResourcesForPredecessor(int value, int pred, int curr) {
+        if (pred < curr)
+            return value > curr || value <= pred;
+        else
+            return value > curr && value <= pred;
+
+    }
+
+    public String getIpAddress() {
         return ipAddress;
     }
 
-    int getPort() {
+    public int getPort() {
         return port;
     }
 
-    int getNodeId() {
+    public int getNodeId() {
         return nodeId;
     }
 
@@ -88,7 +97,10 @@ public class NodeProperties implements Serializable {
     public boolean equals(Object obj) {
         if (obj instanceof NodeProperties) {
             NodeProperties node = (NodeProperties) obj;
-            return nodeId == node.getNodeId();
+            boolean id = nodeId == node.getNodeId();
+            boolean port = getPort() == node.getPort();
+            boolean ip = getIpAddress().equals(node.getIpAddress());
+            return id && port && ip;
         } else return false;
     }
 }

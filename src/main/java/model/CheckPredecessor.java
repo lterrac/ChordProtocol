@@ -21,16 +21,19 @@ public class CheckPredecessor implements Runnable {
      */
     @Override
     public void run() {
+        if (node.isPredecessorSet()) {
+            node.checkPredecessor();
 
-        node.checkPredecessor();
-
-        // Set the timer
-        timer = new Timer();
-        CheckPredecessorTimer task = new CheckPredecessorTimer(node);
-        timer.schedule(task, CHECK_PERIOD);
+            // Set the timer
+            timer = new Timer();
+            CheckPredecessorTimer task = new CheckPredecessorTimer(node);
+            timer.schedule(task, CHECK_PERIOD);
+        }
     }
 
     public void cancelTimer() {
-        timer.cancel();
+        if(timer != null) {
+            timer.cancel();
+        }
     }
 }

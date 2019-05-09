@@ -1,12 +1,12 @@
 package model;
 
-import java.util.Timer;
+import network.requests.NotifyRequest;
+import network.requests.PredecessorRequest;
 
 public class Stabilize implements Runnable {
 
     private final Node node;
     private NodeProperties successorPredecessor;
-    private Timer timer;
     private NodeProperties currentNode;
     private NodeProperties successor;
 
@@ -23,7 +23,7 @@ public class Stabilize implements Runnable {
 
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
-            node.forward(currentNode, successor.getIpAddress(), successor.getPort(), "predecessor", 0, 0, 0,null);
+            node.getForwarder().makeRequest( successor.getIpAddress(), successor.getPort(), new PredecessorRequest(currentNode));
 
         } else {
             if (node.isPredecessorSet()) {
@@ -90,6 +90,6 @@ public class Stabilize implements Runnable {
         }
 
         //Inform the new successor that the current node might be its predecessor
-        node.forward(currentNode, node.successor().getIpAddress(), node.successor().getPort(), "notify", 0, 0, 0, null);
+        node.getForwarder().makeRequest( node.successor().getIpAddress(), node.successor().getPort(), new NotifyRequest(currentNode));
     }
 }*/
