@@ -96,22 +96,6 @@ public class Node {
         return predecessor;
     }
 
-    public Forwarder getForwarder() {
-        return forwarder;
-    }
-
-    /**
-     * Get the finger 0 of the finger table
-     *
-     * @return Node successor
-     */
-    NodeProperties successor() {
-        return fingers[0];
-    }
-
-
-    // Setter
-
     public void setPredecessor(NodeProperties predecessor) {
 
         this.predecessor = predecessor;
@@ -126,6 +110,22 @@ public class Node {
             this.predecessor = predecessor;
             distributePredecessor();
         }*/
+    }
+
+    public Forwarder getForwarder() {
+        return forwarder;
+    }
+
+
+    // Setter
+
+    /**
+     * Get the finger 0 of the finger table
+     *
+     * @return Node successor
+     */
+    NodeProperties successor() {
+        return fingers[0];
     }
 
     /**
@@ -279,7 +279,7 @@ public class Node {
     /**
      * Creates the primary classes of the node.
      * Create : - ServerSocket to accept incoming connections
-     *          - Set
+     * - Set
      */
     private void startNode() {
         serverSocket = createServerSocket();
@@ -301,11 +301,12 @@ public class Node {
 
     /**
      * Initialize the attributes of the node:
-     *      - Creates the {@link NodeProperties} of the node
-     *      - Set the {@link #successor} to the node itself
-     *      - Set the {@link #predecessor} to null
+     * - Creates the {@link NodeProperties} of the node
+     * - Set the {@link #successor} to the node itself
+     * - Set the {@link #predecessor} to null
+     *
      * @param ipAddress IP of the node
-     * @param port Port on which the node is listening
+     * @param port      Port on which the node is listening
      */
     private void initializeNode(String ipAddress, int port) {
         this.properties = new NodeProperties(sha1(ipAddress + ":" + port), ipAddress, port);
@@ -430,6 +431,7 @@ public class Node {
 
     /**
      * Save a file into the "/online" folder
+     *
      * @param file File that has to be saved
      */
     public void saveFile(File file) {
@@ -502,6 +504,7 @@ public class Node {
 
     /**
      * Check if {@link #predecessor} is set
+     *
      * @return true if it is not null, otherwise false
      */
     boolean isPredecessorSet() {

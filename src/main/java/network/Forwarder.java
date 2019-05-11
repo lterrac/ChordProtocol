@@ -123,7 +123,7 @@ public class Forwarder implements Runnable {
 
         try {
             clientSocket.getOutputStream().writeObject(request);
-            clientSocket.getOutputStream().reset();
+            clientSocket.getOutputStream().flush();
         } catch (IOException e) {
             System.exit(0);
         }
