@@ -5,6 +5,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 
+/**
+ * Wrapper for the socket and its streams
+ */
 public class ClientSocket {
     private Socket socket;
     private ObjectInputStream in;

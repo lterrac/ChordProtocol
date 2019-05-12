@@ -11,7 +11,7 @@ public class Stabilize implements Runnable {
     private NodeProperties successor;
 
 
-    public Stabilize(Node node) {
+    Stabilize(Node node) {
         this.node = node;
     }
 
@@ -33,7 +33,7 @@ public class Stabilize implements Runnable {
         }
     }
 
-    public void finalizeStabilize(NodeProperties successorPredecessor) {
+    void finalizeStabilize(NodeProperties successorPredecessor) {
         if (successorPredecessor != null) {
             this.successorPredecessor = successorPredecessor;
 

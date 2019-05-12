@@ -290,6 +290,9 @@ public class Node {
         foldersCreation();
     }
 
+    /**
+     * Create the folders "/online" and "/offline" for the node in which its resources will be stored
+     */
     private void foldersCreation() {
         File f = new File("./node" + properties.getNodeId() + "/offline/offlineFolderCreation");
         if (!f.getParentFile().exists())
@@ -322,7 +325,12 @@ public class Node {
         forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new UpdatePredecessorRequest(getPredecessor()));
     }
 
-
+    /**
+     * Starts the routines : - Check Predecessor
+     * - Fix Fingers
+     * - Stabilize
+     * - Forwarder (check for unused sockets)
+     */
     private void startThreads() {
         checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
@@ -372,7 +380,8 @@ public class Node {
     }
 
     /**
-     * Find the successor of the the askingNode to update its finger table
+     * Find the successor of the the askingNode to update its finger table.
+     * Version adapted for Fix Fingers thread
      *
      * @param askingNode is the node that has sent the first fix_finger request
      * @param fixId      is the upper bound Id of the fixIndex-th row of the finger table
@@ -451,24 +460,12 @@ public class Node {
         }
     }
 
-
     /**
      * Cancel the timer that has been set before sending the request to check if the predecessor is still alive
      */
     public void cancelCheckPredecessorTimer() {
         checkPredecessor.cancelTimer();
     }
-
-    /** TODO Create again forward() ???
-     * Forward a request to a client
-     *
-     * param targetNode is the {@code NodeProperties} information
-     * param ip         is the Ip address of the client to which to forward the request
-     * param port       is the port of the client to which to forward the request
-     * param msg        is the kind of request
-     * param key        is the hash of the key to search on the net
-     */
-
 
     /**
      * Update and return the n_fix variable to properly run the fix_finger algorithm
@@ -511,75 +508,6 @@ public class Node {
         return predecessor != null;
     }
 
-    public void printServerCoordinates() {
-        System.out.println("Server coordinates:");
-        System.out.println("ID: " + properties.getNodeId());
-        System.out.println("Ip: " + properties.getIpAddress());
-        System.out.println("Port: " + properties.getPort());
-        System.out.println("Coordinates: " + properties.getIpAddress() + ":" + properties.getPort());
-
-        System.out.println("------------------------------------------\n");
-    }
-
-    /**
-     * Prints the finger table
-     */
-    public void printFingerTable() {
-        int limit = (int) Math.pow(2, KEY_SIZE);
-        int bound;
-        System.out.println("Finger table node id " + properties.getNodeId() + ":");
-        System.out.println("i\tvalue\tbound");
-
-        for (int i = 0; i < KEY_SIZE; i++) {
-            if (fingers[i] != null) {
-                bound = (int) (Math.pow(2, i) + properties.getNodeId()) % limit;
-                System.out.println("[" + i + "]\t" + fingers[i].getNodeId() + "\t\t" + bound);
-            } else {
-                System.out.println("-");
-            }
-        }
-
-        System.out.println("------------------------------------------\n");
-    }
-
-    /**
-     * Print successor and predecessor of the node
-     */
-    public void printPredecessorAndSuccessor() {
-
-        System.out.println("Current node ID: " + properties.getNodeId());
-        System.out.println();
-
-        if (predecessor != null) {
-            System.out.println("Predecessor coordinates:");
-            System.out.println("ID: " + predecessor.getNodeId());
-            System.out.println("Ip: " + predecessor.getIpAddress());
-            System.out.println("Port: " + predecessor.getPort());
-            System.out.println();
-        }
-
-        if (successor() != null) {
-            System.out.println("Successor coordinates:");
-            System.out.println("ID: " + successor().getNodeId());
-            System.out.println("Ip: " + successor().getIpAddress());
-            System.out.println("Port: " + successor().getPort());
-        }
-
-        System.out.println("------------------------------------------\n");
-    }
-
-    /**
-     * Terminate all the threads and close the socket connection of the server side
-     */
-    public void close() {
-        checkPredecessorThread.shutdownNow();
-        fixFingersThread.shutdownNow();
-        stabilizeThread.shutdownNow();
-        forwarderThread.shutdownNow();
-        forwarder.stop();
-        nodeSocketServer.close();
-        forwarder.stop();
-    }
 
     /**
      * Send the files to be assigned to your predecessor
@@ -699,6 +627,77 @@ public class Node {
             logger.log(Level.WARNING, "Trying to concurrently access files");
         }
     }*/
+
+    public void printServerCoordinates() {
+        System.out.println("Server coordinates:");
+        System.out.println("ID: " + properties.getNodeId());
+        System.out.println("Ip: " + properties.getIpAddress());
+        System.out.println("Port: " + properties.getPort());
+        System.out.println("Coordinates: " + properties.getIpAddress() + ":" + properties.getPort());
+
+        System.out.println("------------------------------------------\n");
+    }
+
+    /**
+     * Prints the finger table
+     */
+    public void printFingerTable() {
+        int limit = (int) Math.pow(2, KEY_SIZE);
+        int bound;
+        System.out.println("Finger table node id " + properties.getNodeId() + ":");
+        System.out.println("i\tvalue\tbound");
+
+        for (int i = 0; i < KEY_SIZE; i++) {
+            if (fingers[i] != null) {
+                bound = (int) (Math.pow(2, i) + properties.getNodeId()) % limit;
+                System.out.println("[" + i + "]\t" + fingers[i].getNodeId() + "\t\t" + bound);
+            } else {
+                System.out.println("-");
+            }
+        }
+
+        System.out.println("------------------------------------------\n");
+    }
+
+    /**
+     * Print successor and predecessor of the node
+     */
+    public void printPredecessorAndSuccessor() {
+
+        System.out.println("Current node ID: " + properties.getNodeId());
+        System.out.println();
+
+        if (predecessor != null) {
+            System.out.println("Predecessor coordinates:");
+            System.out.println("ID: " + predecessor.getNodeId());
+            System.out.println("Ip: " + predecessor.getIpAddress());
+            System.out.println("Port: " + predecessor.getPort());
+            System.out.println();
+        }
+
+        if (successor() != null) {
+            System.out.println("Successor coordinates:");
+            System.out.println("ID: " + successor().getNodeId());
+            System.out.println("Ip: " + successor().getIpAddress());
+            System.out.println("Port: " + successor().getPort());
+        }
+
+        System.out.println("------------------------------------------\n");
+    }
+
+    /**
+     * Terminate all the threads and close the socket connection of the server side
+     */
+    public void close() {
+        checkPredecessorThread.shutdownNow();
+        fixFingersThread.shutdownNow();
+        stabilizeThread.shutdownNow();
+        forwarderThread.shutdownNow();
+        forwarder.stop();
+        nodeSocketServer.close();
+        forwarder.stop();
+    }
+
 
     public void transferOnLeave() {
         File folder = new File("./node" + properties.getNodeId() + "/online");

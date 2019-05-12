@@ -9,7 +9,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
 
-
 public class NodeSocketServer implements Runnable {
 
     private static final Logger logger = Logger.getLogger(NodeSocketServer.class.getName());
@@ -25,6 +24,9 @@ public class NodeSocketServer implements Runnable {
         serverSocket = node.getServerSocket();
     }
 
+    /**
+     * Listen for incoming connections and creates a {@link network.RequestHandler} for every one of them
+     */
     public void run() {
 
         while (!stop) {
@@ -48,6 +50,9 @@ public class NodeSocketServer implements Runnable {
         pool.shutdown();
     }
 
+    /**
+     * Stop listening on the port
+     */
     public void close() {
         stop = true;
     }

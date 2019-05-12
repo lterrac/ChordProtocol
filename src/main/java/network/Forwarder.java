@@ -9,24 +9,40 @@ import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.*;
 import java.util.stream.Collectors;
 
 import static utilities.Utilities.sha1;
 
+/**
+ * This class is responsible of sending file to other nodes.
+ */
 public class Forwarder implements Runnable {
+
+    /**
+     * Logger used for debug purpose
+     */
     private final Logger LOGGER = Logger.getLogger(Forwarder.class.getName());
-    private ClientSocket clientSocket;
+    /**
+     * Contains all the sockets of the nodes connected with the current node
+     */
     private final Map<String, ClientSocket> socketMap;
+    /**
+     * Keeps track of the last time a socket has been used
+     */
     private final Map<String, Long> lastMessage;
-    private AtomicBoolean stop;
+    /**
+     * Used to enable log
+     */
     private boolean debug = false;
+    /**
+     * Encapsulates the current socket used to communicate with the target node
+     */
+    private ClientSocket clientSocket;
 
     public Forwarder(int nodeId) {
         socketMap = new HashMap<>();
         lastMessage = new HashMap<>();
-        stop = new AtomicBoolean(false);
 
         if (debug) {
             Handler consoleHandler = null;
@@ -60,15 +76,27 @@ public class Forwarder implements Runnable {
         }
     }
 
-
+    /**
+     * Executes {@link #checkUnusedSockets()}
+     */
     @Override
     public void run() {
         checkUnusedSockets();
     }
 
+    /**
+     * Main method of the class: it is used to send a {@link network.requests.Request} through a socket.
+     * First of all, {@link #socketMap} is checked to see if a socket with the target node has been created.
+     * If it already exists, the socket is assigned to {@link #clientSocket} and the {@link network.requests.Request}
+     * is written into its output stream. Otherwise the socket is created and added to {@link #socketMap},
+     * then it proceeds as descripted before. After the {@link network.requests.Request} is sent {@link #lastMessage}
+     * is updated with the actual timestamp
+     *
+     * @param ip      Ip of the target node
+     * @param port    Port of the target node
+     * @param request Request to send
+     */
     public synchronized void makeRequest(String ip, int port, Request request) {
-
-
 
         try {
             ObjectOutputStream out;
@@ -119,6 +147,10 @@ public class Forwarder implements Runnable {
         }
     }
 
+    /**
+     * Writes a {@link network.requests.Request} into the output stream of {@link #clientSocket}.
+     * @param request Request to send
+     */
     public void request(Request request) {
 
         try {
@@ -132,8 +164,8 @@ public class Forwarder implements Runnable {
     /**
      * Update last time a message is sent to a specific client
      *
-     * @param ip
-     * @param port
+     * @param ip Ip of the node
+     * @param port Port of the node
      */
     private void updateLastMessage(String ip, int port) {
         synchronized (lastMessage) {
@@ -145,8 +177,8 @@ public class Forwarder implements Runnable {
     /**
      * Add a new node to the active socket to check its timestamp
      *
-     * @param ip
-     * @param port
+     * @param ip Ip of the node
+     * @param port Port of the node
      */
     private void addToLastMessage(String ip, int port) {
         synchronized (lastMessage) {
@@ -155,6 +187,12 @@ public class Forwarder implements Runnable {
     }
 
 
+    /**
+     * Checks for unused sockets. During the execution of the program the fingers of a
+     * node may change several times. So it is necessary to check whether a socket is still used or not in order to
+     * avoid port exhaustion.
+     * To do this kind of check close the sockets inactive for more than 10 seconds.
+     */
     private void checkUnusedSockets() {
 
         List<String> socketToClose;
@@ -203,7 +241,9 @@ public class Forwarder implements Runnable {
         }
     }
 
-
+    /**
+     * Close all the sockets and clear all the Hashmaps.
+     */
     public void stop() {
 
         //Close the sockets

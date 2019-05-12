@@ -12,7 +12,7 @@ public class CheckPredecessor implements Runnable {
     private Node node;
     private Timer timer;
 
-    public CheckPredecessor(Node node) {
+    CheckPredecessor(Node node) {
         this.node = node;
     }
 
@@ -31,7 +31,7 @@ public class CheckPredecessor implements Runnable {
         }
     }
 
-    public void cancelTimer() {
+    void cancelTimer() {
         if(timer != null) {
             timer.cancel();
         }
