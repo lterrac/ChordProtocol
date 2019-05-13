@@ -23,6 +23,9 @@ import static model.NodeProperties.*;
 import static utilities.Utilities.calculateFixId;
 import static utilities.Utilities.sha1;
 
+/**
+ * Main class of the Chord protocol.
+ */
 public class Node {
 
     private static final Logger logger = Logger.getLogger(Node.class.getName());
@@ -84,6 +87,7 @@ public class Node {
     }
 
     // Getter
+
     public NodeProperties getProperties() {
         return properties;
     }
@@ -96,24 +100,26 @@ public class Node {
         return predecessor;
     }
 
-    public void setPredecessor(NodeProperties predecessor) {
-
-        this.predecessor = predecessor;
-
-        /*if (predecessor == null) {
-            this.predecessor = null;
-            return;
-        }
-
-        //Each time the predecessor is updated, check if any resources should be forwarded to it
-        if(!isPredecessorSet() || !this.predecessor.equals(predecessor)) {
-            this.predecessor = predecessor;
-            distributePredecessor();
-        }*/
-    }
-
     public Forwarder getForwarder() {
         return forwarder;
+    }
+
+    /**
+     * Get the Ip address of the current node
+     *
+     * @return the Ip address of the machine on which the node is running
+     */
+    private String getCurrentIp() {
+        //Find Ip address, it will be published later for joining
+        InetAddress currentIp = null;
+        try {
+            currentIp = InetAddress.getLocalHost();
+        } catch (UnknownHostException e) {
+            System.out.println(e.getMessage());
+        }
+
+        assert currentIp != null;
+        return currentIp.getHostAddress();
     }
 
 
@@ -134,27 +140,14 @@ public class Node {
      * @param node the successor
      */
     public void setSuccessor(NodeProperties node) {
-        // TODO synchronized??
-        this.fingers[0] = node;
+        synchronized (fingers) {
+            this.fingers[0] = node;
+        }
 
     }
 
-    /**
-     * Get the Ip address of the current node
-     *
-     * @return the Ip address of the machine on which the node is running
-     */
-    private String getCurrentIp() {
-        //Find Ip address, it will be published later for joining
-        InetAddress currentIp = null;
-        try {
-            currentIp = InetAddress.getLocalHost();
-        } catch (UnknownHostException e) {
-            System.out.println(e.getMessage());
-        }
-
-        assert currentIp != null;
-        return currentIp.getHostAddress();
+    public void setPredecessor(NodeProperties predecessor) {
+        this.predecessor = predecessor;
     }
 
     /**
@@ -210,6 +203,8 @@ public class Node {
 
         new Thread(nodeSocketServer).start();
     }
+
+    //TODO Check what the fuck is wrong with this method
 
     /**
      * Check if the current node is the last in the network
@@ -338,7 +333,7 @@ public class Node {
         forwarderThread = Executors.newSingleThreadScheduledExecutor();
 
         forwarderThread.scheduleAtFixedRate(forwarder, 1, CHECK_SOCKET_PERIOD, TimeUnit.MILLISECONDS);
-        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 0, CHECK_PERIOD, TimeUnit.MILLISECONDS);
+        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 200, CHECK_PERIOD, TimeUnit.MILLISECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 200, FIX_PERIOD, TimeUnit.MILLISECONDS);
         stabilizeThread.scheduleAtFixedRate(stabilize, 400, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
     }
@@ -510,23 +505,8 @@ public class Node {
 
 
     /**
-     * Send the files to be assigned to your predecessor
+     * Send the files to be assigned to other nodes
      */
-    /*
-    public void distributePredecessor() {
-
-        System.out.println("___________________________________________________________________________________________________________________PREDECESSOR______________");
-        File folder = new File("./node" + properties.getNodeId());
-        File[] allFiles = folder.listFiles();
-
-        for (File file : allFiles) {
-            if (isPredecessorSet() && !isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
-                System.out.println("File " + sha1(file.getName()) + " to " + predecessor.getNodeId());
-                sendResource(predecessor.getIpAddress(), predecessor.getPort(), "file_to_predecessor", file);
-                file.delete();
-            }
-        }
-    }*/
     public void distributeResource(NodeProperties nodeProperties, File file) {
 
         //called when resources are published on purpose
@@ -557,8 +537,8 @@ public class Node {
 
                 if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound)) {
                     /*System.out.println("___________________________________________________________________________________________________________________DISTRIBUTE FOR______________");
-                    System.out.println("File " + fileId + " to " + fingers[i + 1].getNodeId());*/
-                    forwarder.makeRequest(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), new DistributeResourceRequest(null, file));
+                    System.out.println("File " + fileId + " to " + fingers[i].getNodeId());*/
+                    forwarder.makeRequest(fingers[i].getIpAddress(), fingers[i].getPort(), new DistributeResourceRequest(null, file));
                     return;
                 }
 
