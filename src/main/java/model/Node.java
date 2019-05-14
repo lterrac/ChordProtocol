@@ -333,7 +333,7 @@ public class Node {
         forwarderThread = Executors.newSingleThreadScheduledExecutor();
 
         forwarderThread.scheduleAtFixedRate(forwarder, 1, CHECK_SOCKET_PERIOD, TimeUnit.MILLISECONDS);
-        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 200, CHECK_PERIOD, TimeUnit.MILLISECONDS);
+        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 800, 4500, TimeUnit.MILLISECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 200, FIX_PERIOD, TimeUnit.MILLISECONDS);
         stabilizeThread.scheduleAtFixedRate(stabilize, 400, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
     }
@@ -346,6 +346,7 @@ public class Node {
      */
     public void notifySuccessor(NodeProperties predecessor) {
         if ((this.predecessor == null || predecessor.isInIntervalStrict(this.predecessor.getNodeId(), properties.getNodeId()))) {
+            System.out.println("notify predecessor " + predecessor.getNodeId());
             setPredecessor(predecessor);
         }
     }

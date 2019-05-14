@@ -10,7 +10,7 @@ import static model.NodeProperties.CHECK_PERIOD;
 public class CheckPredecessor implements Runnable {
 
     private Node node;
-    private Timer timer;
+    private CheckPredecessorTimer task;
 
     CheckPredecessor(Node node) {
         this.node = node;
@@ -22,18 +22,16 @@ public class CheckPredecessor implements Runnable {
     @Override
     public void run() {
         if (node.isPredecessorSet()) {
-            node.checkPredecessor();
+            // Create the task and set the timer
+            task = new CheckPredecessorTimer(node);
+            (new Timer()).schedule(task, CHECK_PERIOD);
 
-            // Set the timer
-            timer = new Timer();
-            CheckPredecessorTimer task = new CheckPredecessorTimer(node);
-            timer.schedule(task, CHECK_PERIOD);
+            node.checkPredecessor();
         }
     }
 
     void cancelTimer() {
-        if(timer != null) {
-            timer.cancel();
-        }
+        if (task != null)
+            task.stop();
     }
 }
