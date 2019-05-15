@@ -11,8 +11,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -45,10 +45,11 @@ public class Node {
      */
     private NodeProperties properties;
 
+
     /**
      * List of adjacent successors of the node
      */
-    private List<NodeProperties> successors;
+    private Deque<NodeProperties> successors;
 
     /**
      * Scheduled executor to run threads at regular time intervals
@@ -79,7 +80,7 @@ public class Node {
 
     public Node() {
         n_fix = -1;
-        successors = new ArrayList<>();
+        successors = new ArrayDeque<NodeProperties>(KEY_SIZE);
 
         checkPredecessor = new CheckPredecessor(this);
         fixFingers = new FixFingers(this);
@@ -87,6 +88,10 @@ public class Node {
     }
 
     // Getter
+
+    public Deque<NodeProperties> getSuccessors() {
+        return successors;
+    }
 
     public NodeProperties getProperties() {
         return properties;
@@ -100,9 +105,16 @@ public class Node {
         return predecessor;
     }
 
+    public void setPredecessor(NodeProperties predecessor) {
+        this.predecessor = predecessor;
+    }
+
     public Forwarder getForwarder() {
         return forwarder;
     }
+
+
+    // Setter
 
     /**
      * Get the Ip address of the current node
@@ -121,9 +133,6 @@ public class Node {
         assert currentIp != null;
         return currentIp.getHostAddress();
     }
-
-
-    // Setter
 
     /**
      * Get the finger 0 of the finger table
@@ -144,10 +153,6 @@ public class Node {
             this.fingers[0] = node;
         }
 
-    }
-
-    public void setPredecessor(NodeProperties predecessor) {
-        this.predecessor = predecessor;
     }
 
     /**
@@ -406,11 +411,25 @@ public class Node {
      * @return the closest node to the target one
      */
     private NodeProperties closestPrecedingNode(int nodeId) {
-        for (int i = KEY_SIZE - 1; i >= 0; i--) {
-            if (fingers[i] != null && fingers[i].isInInterval(properties.getNodeId(), nodeId))
-                return fingers[i];
+
+        NodeProperties closest = properties;
+        boolean found = false;
+
+        // first check the finger table
+        for (int i = KEY_SIZE - 1; i >= 0 && !found; i--) {
+            if (fingers[i] != null && fingers[i].isInInterval(properties.getNodeId(), nodeId)) {
+                closest = fingers[i];
+                found = true;
+            }
         }
-        return properties;
+
+        // then check the successors list
+        for (NodeProperties n : successors) {
+            if (n.getNodeId() > closest.getNodeId() && n.getNodeId() < nodeId) {
+                closest = n;
+            }
+        }
+        return closest;
     }
 
 
@@ -571,44 +590,6 @@ public class Node {
         return 0;
     }
 
-    // TODO: concurrent access to files by different nodes on the same machine if enabled
-    // check if you must send some resources to other nodes
-    /*public void checkResources() {
-        try {
-            File folder = new File("./node" + properties.getNodeId());
-            File[] allFiles = folder.listFiles();
-
-            for (File file : allFiles) {
-                int fileId = sha1(file.getName());
-                int highestIndex = searchHighestFinger();
-
-                if (!isPredecessorSet() || !isInIntervalInteger(predecessor.getNodeId(), fileId, properties.getNodeId())) {
-
-                    // if the resource must be sent to one of the fingers
-                    for (int i = 0; i < KEY_SIZE - 1; i++) {
-
-                        int lowerBound = calculateFixId(properties.getNodeId(), i);
-                        int upperBound = calculateFixId(properties.getNodeId(), i + 1);
-
-                        if (i + 1 <= highestIndex && isInIntervalInteger(lowerBound, fileId, upperBound) && fileId <= fingers[i + 1].getNodeId()) {
-                            sendResource(fingers[i + 1].getIpAddress(), fingers[i + 1].getPort(), "distribute_resource", file);
-                            file.delete();
-                            return;
-                        }
-                    }
-                }
-
-                // if the resource is out of the scope of the finger table forward it to the last finger, but only if it's not yourself
-                if (fingers[highestIndex].getNodeId() != properties.getNodeId()) {
-                    sendResource(fingers[highestIndex].getIpAddress(), fingers[highestIndex].getPort(), "distribute_resource", file);
-                    file.delete();
-                }
-            }
-        } catch (Exception e) {
-            logger.log(Level.WARNING, "Trying to concurrently access files");
-        }
-    }*/
-
     public void printServerCoordinates() {
         System.out.println("Server coordinates:");
         System.out.println("ID: " + properties.getNodeId());
@@ -666,6 +647,16 @@ public class Node {
         System.out.println("------------------------------------------\n");
     }
 
+    public void printSuccessors() {
+        System.out.println("List of successors contained by node " + properties.getNodeId() + ":");
+
+        for (NodeProperties n : successors) {
+            System.out.println(n.getNodeId());
+        }
+
+        System.out.println("------------------------------------------\n");
+    }
+
     /**
      * Terminate all the threads and close the socket connection of the server side
      */
@@ -689,6 +680,21 @@ public class Node {
             forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new TransferAfterLeaveRequest(file));
             file.delete();
         }
+    }
+
+    public void updateSuccessors(Deque<NodeProperties> sList) {
+        successors = sList;
+    }
+
+    public Deque<NodeProperties> getCustomizedSuccessors() {
+        Deque<NodeProperties> newList = new ArrayDeque<>(successors);
+
+        if (newList.size() >= KEY_SIZE) {
+            newList.removeLast();
+        }
+        newList.addFirst(properties);
+
+        return newList;
     }
 }
 

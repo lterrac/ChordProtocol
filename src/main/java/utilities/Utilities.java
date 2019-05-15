@@ -43,16 +43,15 @@ public class Utilities {
      * Calculate the fixId to check. Keep attention that if id+2^(fixIndex)
      * is greater than the maximum key value ( 2^(KEY_SIZE) - 1 ) it must return the diffenrence
      * between the two values.
-     * @param nodeId    is the id of the node
-     * @param fixIndex  is the index of the finger table
+     *
+     * @param nodeId   is the id of the node
+     * @param fixIndex is the index of the finger table
      * @return the upper bound of the finger table row
      */
     public static int calculateFixId(int nodeId, double fixIndex) {
         int ideal = nodeId + (int) Math.pow(2, fixIndex);
-        int limit = (int) Math.pow(2, NodeProperties.KEY_SIZE) - 1;
-        if (ideal > limit)
-            return ideal - limit - 1;
-        else return ideal;
+        int limit = (int) Math.pow(2, NodeProperties.KEY_SIZE);
+        return ideal % limit;
     }
 
 }

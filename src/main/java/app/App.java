@@ -66,9 +66,6 @@ public class App {
                 case 6: // Look for a key
                     lookup();
                     break;
-                /*case 7: // Ping request
-                    ping();
-                    break;*/
                 case 7:
                     if (!resourcesCreated) {
                         createResources();
@@ -84,6 +81,8 @@ public class App {
                     else
                         printError();
                     break;
+                case 9:
+                    node.printSuccessors();
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
                     exit();
@@ -102,9 +101,9 @@ public class App {
         System.out.println("4. The file key IDs and content contained by the current node but still not published;");
         System.out.println("5. The file key IDs and content contained by the current node according to network topology;");
         System.out.println("6. Lookup for a resource;");
-        //System.out.println("7. Ping a node;");
         System.out.println("7. Create your offline resources;");
         System.out.println("8. Publish your resources on the network;");
+        System.out.println("9. Print successor list;");
         System.out.println("0. Leave the network");
     }
     /*
