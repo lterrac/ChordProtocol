@@ -83,6 +83,7 @@ public class App {
                     break;
                 case 9:
                     node.printSuccessors();
+                    break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
                     exit();

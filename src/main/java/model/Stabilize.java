@@ -3,6 +3,8 @@ package model;
 import network.requests.NotifyRequest;
 import network.requests.PredecessorRequest;
 
+import java.util.Deque;
+
 public class Stabilize implements Runnable {
 
     private final Node node;
@@ -33,7 +35,11 @@ public class Stabilize implements Runnable {
         }
     }
 
-    void finalizeStabilize(NodeProperties successorPredecessor) {
+    void finalizeStabilize(NodeProperties successorPredecessor, Deque<NodeProperties> successors) {
+
+        //Update successors list with the new one received by our successor
+        node.updateSuccessors(successors);
+
         if (successorPredecessor != null) {
             this.successorPredecessor = successorPredecessor;
 
