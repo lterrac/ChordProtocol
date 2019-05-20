@@ -201,7 +201,7 @@ public class Node {
      */
     public void join(String ip, int port) {
         startNode();
-        forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties));
+        forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties), false, -1);
 
         startThreads();
         nodeSocketServer = new NodeSocketServer(this);
@@ -243,7 +243,7 @@ public class Node {
             File folder = new File("./node" + this.getProperties().getNodeId() + "/offline");
             File[] allFiles = folder.listFiles();
             for (File file : allFiles) {
-                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null, file));
+                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null, file), true, -1);
                 file.delete();
             }
         }
@@ -255,7 +255,7 @@ public class Node {
      * Ask to the successor if it holds some resources that needs to be managed by the current node
      */
     public void askSuccessorForResources() {
-        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new AskSuccessorResourcesRequest(this.getProperties()));
+        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new AskSuccessorResourcesRequest(this.getProperties()), true, -1);
     }
 
     /**
@@ -270,7 +270,7 @@ public class Node {
         File[] allFiles = folder.listFiles();
         for (File f : allFiles) {
             if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
-                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties, f));
+                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties, f),false, -1);
                 f.delete();
             }
         }
@@ -286,7 +286,7 @@ public class Node {
         int port = serverSocket.getLocalPort();
         String ipAddress = getCurrentIp();
         initializeNode(ipAddress, port);
-        forwarder = new Forwarder(properties.getNodeId());
+        forwarder = new Forwarder(this);
         foldersCreation();
     }
 
@@ -435,7 +435,7 @@ public class Node {
 
     /**
      * Look for the owner of a resource in the net.
-     *
+     * TODO: check
      * @param key is the hash of the resource you're looking for in the net
      */
     public void lookup(NodeProperties askingNode, int key) {
@@ -677,7 +677,7 @@ public class Node {
 
         // TODO: after the switch to the Visitor pattern, send them as a list
         for (File file : allFiles) {
-            forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new TransferAfterLeaveRequest(file));
+            forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new TransferAfterLeaveRequest(file), true);
             file.delete();
         }
     }
@@ -695,6 +695,24 @@ public class Node {
         newList.addFirst(properties);
 
         return newList;
+    }
+
+    public void retryAndUpdate(Request request, boolean isSuccessor, int fingerIndex) {
+        if (isSuccessor) {
+            // update the successor
+            setSuccessor(successors.removeFirst());
+
+            // send again
+            forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), request, true);
+        } else {
+            fingers[fingerIndex] = null;
+
+            // send again
+            forwarder.makeRequest(fingers[fingerIndex - 1].getIpAddress(), fingers[fingerIndex - 1].getPort(), request, false);
+        }
+
+
+
     }
 }
 

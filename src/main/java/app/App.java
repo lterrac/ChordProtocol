@@ -13,12 +13,12 @@ import static utilities.Utilities.sha1;
 public class App {
 
     private static final Logger logger = Logger.getLogger(App.class.getName()); // TODO: cancel if not necessary
+    private static final int RESOURCES_NUMBER = 5;
     private static Node node;
     private static Scanner stringScanner = new Scanner(System.in);
     private static Scanner intScanner = new Scanner(System.in); // To avoid burning new line characters
     private static String knownIp;
     private static int knownPort;
-    private static final int RESOURCES_NUMBER = 5;
     private static boolean resourcesCreated;
 
     public static void main(String[] args) {
@@ -55,7 +55,7 @@ public class App {
                     node.printPredecessorAndSuccessor();
                     break;
                 case 4: // offline resources contained by the node
-                    if(resourcesCreated)
+                    if (resourcesCreated)
                         printResources("offline");
                     else
                         printError();
@@ -70,19 +70,19 @@ public class App {
                     if (!resourcesCreated) {
                         createResources();
                         resourcesCreated = true;
-                    }
-                    else{
+                    } else {
                         System.out.println("You already created your resources!");
                     }
                     break;
                 case 8:
-                    if(resourcesCreated)
+                    if (resourcesCreated)
                         node.publishResources();
                     else
                         printError();
                     break;
                 case 9:
                     node.printSuccessors();
+                    break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
                     exit();
@@ -139,12 +139,12 @@ public class App {
         System.exit(0);
     }
 
-    private static void printResources(String onOrOff){
-        File folder = new File("./node" + node.getProperties().getNodeId()+"/"+onOrOff);
+    private static void printResources(String onOrOff) {
+        File folder = new File("./node" + node.getProperties().getNodeId() + "/" + onOrOff);
         File[] allFiles = folder.listFiles();
 
-        if (allFiles != null || allFiles.length==0) {
-            System.out.println(allFiles.length + " resources available "+onOrOff+" in node "+ node.getProperties().getNodeId() + ":");
+        if (allFiles != null || allFiles.length == 0) {
+            System.out.println(allFiles.length + " resources available " + onOrOff + " in node " + node.getProperties().getNodeId() + ":");
             for (File allFile : allFiles) {
                 System.out.println("SHA: " + sha1(allFile.getName()) + "\tName: " + allFile.getName());
             }
@@ -157,7 +157,7 @@ public class App {
     private static void createResources() {
         for (int i = 0; i < RESOURCES_NUMBER; i++) {
             String filename = "Node" + node.getProperties().getNodeId() + "-File" + i;
-            File f = new File("./node" + node.getProperties().getNodeId()+"/offline/" + filename);
+            File f = new File("./node" + node.getProperties().getNodeId() + "/offline/" + filename);
             /*if (!f.getParentFile().exists())
                 f.getParentFile().mkdirs();*/
             if (!f.exists()) {
@@ -174,7 +174,7 @@ public class App {
         System.out.println("You correctly created your offline resources.");
     }
 
-    private static void printError(){
+    private static void printError() {
         System.out.println("You need to create your own resources in order to see or publish them.");
     }
 }

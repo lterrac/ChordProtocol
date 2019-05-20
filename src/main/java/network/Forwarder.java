@@ -1,6 +1,7 @@
 package network;
 
 
+import model.Node;
 import network.requests.Request;
 
 import java.io.IOException;
@@ -40,9 +41,12 @@ public class Forwarder implements Runnable {
      */
     private ClientSocket clientSocket;
 
-    public Forwarder(int nodeId) {
+    private Node node;
+
+    public Forwarder(Node node) {
         socketMap = new HashMap<>();
         lastMessage = new HashMap<>();
+        this.node = node;
 
         if (debug) {
             Handler consoleHandler = null;
@@ -50,7 +54,7 @@ public class Forwarder implements Runnable {
             try {
                 //Creating consoleHandler and fileHandler
                 consoleHandler = new ConsoleHandler();
-                fileHandler = new FileHandler("./node-" + nodeId + ".log", 1024 * 1024, 1, true);
+                fileHandler = new FileHandler("./node-" + node.getProperties().getNodeId() + ".log", 1024 * 1024, 1, true);
 
                 //Assigning handlers to LOGGER object
                 LOGGER.addHandler(consoleHandler);
@@ -96,7 +100,7 @@ public class Forwarder implements Runnable {
      * @param port    Port of the target node
      * @param request Request to send
      */
-    public synchronized void makeRequest(String ip, int port, Request request) {
+    public synchronized void makeRequest(String ip, int port, Request request, boolean isSuccessor, int fingerIndex) {
 
         try {
             ObjectOutputStream out;
@@ -125,17 +129,7 @@ public class Forwarder implements Runnable {
 
             this.clientSocket = socketMap.get(ip + ":" + port);
 
-            //Create the message and send it
-            //Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey, file);
-
-            /*if (debug)
-                LOGGER.log(Level.FINE, "Target: " + sha1(ip + ":" + port) + " message:" + message);*/
-
-
-            request(request);
-            /*clientSocket.getOutputStream().writeObject(msg);
-            clientSocket.getOutputStream().flush();
-            clientSocket = null;*/
+            request(request, isSuccessor, fingerIndex);
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
@@ -143,28 +137,33 @@ public class Forwarder implements Runnable {
             lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()));
             socketMap.remove(ip + ":" + port);
             clientSocket.close();
-
         }
     }
 
     /**
      * Writes a {@link network.requests.Request} into the output stream of {@link #clientSocket}.
+     *
      * @param request Request to send
      */
-    public void request(Request request) {
+    public void request(Request request, boolean isSuccessor, int fingerIndex) {
 
         try {
             clientSocket.getOutputStream().writeObject(request);
             clientSocket.getOutputStream().flush();
         } catch (IOException e) {
-            System.exit(0);
+            if (fingerIndex == -1 && !isSuccessor) {
+                LOGGER.log(Level.WARNING, "Impossible to join the network or to reach the predecessor");
+                node.setPredecessor(null);
+            } else {
+                node.retryAndUpdate(request, isSuccessor, fingerIndex);
+            }
         }
     }
 
     /**
      * Update last time a message is sent to a specific client
      *
-     * @param ip Ip of the node
+     * @param ip   Ip of the node
      * @param port Port of the node
      */
     private void updateLastMessage(String ip, int port) {
@@ -177,7 +176,7 @@ public class Forwarder implements Runnable {
     /**
      * Add a new node to the active socket to check its timestamp
      *
-     * @param ip Ip of the node
+     * @param ip   Ip of the node
      * @param port Port of the node
      */
     private void addToLastMessage(String ip, int port) {
@@ -253,4 +252,5 @@ public class Forwarder implements Runnable {
         socketMap.clear();
         lastMessage.clear();
     }
+
 }
