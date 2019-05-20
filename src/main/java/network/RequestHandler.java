@@ -203,7 +203,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         int receiverPort = request.getProperties().getPort();
 
         //TODO Check if it is the right behaviour
-        node.getForwarder().makeRequest( receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor()));
+        node.getForwarder().makeRequest( receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor(), node.getCustomizedSuccessors()));
     }
 
     //Once the predecessor is arrived, set it into the dedicated thread and call notify()
@@ -211,7 +211,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     @Override
     public void handle(PredecessorReplyRequest request) {
 
-        node.finalizeStabilize(request.getProperties());
+        node.finalizeStabilize(request.getProperties(), request.getSuccessors());
     }
 
     @Override

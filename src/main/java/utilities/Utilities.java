@@ -14,7 +14,7 @@ public class Utilities {
     /**
      * Example of SHA 1 -> uses m = 160 bit
      */
-    public static void main(String[] args) throws NoSuchAlgorithmException {
+    public static void main(String[] args) {
         System.out.println(sha1("File0"));
         System.out.println(sha1("File1"));
         System.out.println(sha1("File2"));

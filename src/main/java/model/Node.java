@@ -80,7 +80,7 @@ public class Node {
 
     public Node() {
         n_fix = -1;
-        successors = new ArrayDeque<NodeProperties>(KEY_SIZE);
+        successors = new ArrayDeque<>(KEY_SIZE);
 
         checkPredecessor = new CheckPredecessor(this);
         fixFingers = new FixFingers(this);
@@ -156,12 +156,12 @@ public class Node {
     }
 
     /**
-     * Update the predecessor node of the successor in the stabilize thread
+     * Update the predecessor node of the successor in the stabilize thread and the successors list
      *
      * @param newNode is the node to be set as predecessor for the successor
      */
-    public void finalizeStabilize(NodeProperties newNode) {
-        stabilize.finalizeStabilize(newNode);
+    public void finalizeStabilize(NodeProperties newNode, Deque<NodeProperties> successors) {
+        stabilize.finalizeStabilize(newNode, successors);
     }
 
     /**
@@ -682,7 +682,7 @@ public class Node {
         }
     }
 
-    public void updateSuccessors(Deque<NodeProperties> sList) {
+    void updateSuccessors(Deque<NodeProperties> sList) {
         successors = sList;
     }
 
