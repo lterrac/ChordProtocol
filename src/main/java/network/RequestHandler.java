@@ -43,7 +43,6 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     private void readResponse() {
         try {
             /*
-            //TODO Decide to use Visitor pattern or not.
               In this case the object will call the handle() method which will be
               managed by the method overridden in the Node class. Otherwise keep the switch
               case and call different methods, always defined in node.
@@ -51,38 +50,15 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
               example : RequestObj request = ((RequestObj) in.readObject()).handle(node);
             */
 
-            ((Request) in.readObject()).handleRequest(this);
+            //Read request
+            Request request = (Request) in.readObject();
 
-            /*
-            switch (msg.getMessage()) {
-                case "ping": {
-                    String senderIp = msg.getProperties().getIpAddress();
-                    int senderPort = msg.getProperties().getPort();
-                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply", 0, 0, 0, null);
-                }
-                break;
-                case "ping_reply": {
-                    System.out.println("Ping message received from node " + msg.getProperties().getNodeId());
-                    System.out.println("------------------------------------------\n");
-                }
-                break;
+            //send ACK
+            ack();
 
+            //Handle request
+            request.handleRequest(this);
 
-                case "file_to_predecessor": {
-                     TODO check if inconsistency w.r.t. predecessor trigger
-                    if (sha1(msg.getFile().getName()) <= node.getPredecessor().getNodeId()) {
-                        node.sendResource(node.getPredecessor().getIpAddress(), node.getPredecessor().getPort(), "file_to_predecessor", msg.getFile());
-                    }
-                    node.saveFile(msg.getFile());
-                }
-                break;
-
-
-                default:
-                    logger.log(Level.SEVERE, "This request doesn't exist.");
-
-            }
-            */
         } catch (EOFException | SocketException e) {
             if (!stop) {
                 close();
@@ -90,6 +66,10 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
+    }
+
+    private void ack() throws IOException {
+        out.writeObject(new Ack());
     }
 
     private void stopping() {
@@ -122,6 +102,12 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         } catch (IOException e) {
             System.err.println(e.getMessage());
         }
+    }
+
+
+    @Override
+    public void handle(Ack request) {
+       //TODO Scrivi qualcosa
     }
 
     //search for the successor of the node received from the network
@@ -209,10 +195,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     //Once the predecessor is arrived, set it into the dedicated thread and call notify()
     //todo Check if a synchronized block is necessary
     @Override
-    public void handle(PredecessorReplyRequest request) {
-
-        node.finalizeStabilize(request.getProperties(), request.getSuccessors());
-    }
+    public void handle(PredecessorReplyRequest request) { node.finalizeStabilize(request.getProperties(), request.getSuccessors()); }
 
     @Override
     public void handle(NotifyRequest request) {

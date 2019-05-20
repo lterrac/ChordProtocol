@@ -19,4 +19,5 @@ public interface RequestHandlerInterface {
     void handle(PredecessorRequest request);
     void handle(PredecessorReplyRequest request);
     void handle(NotifyRequest request);
+    void handle(Ack request);
 }

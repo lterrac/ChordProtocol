@@ -117,7 +117,7 @@ public class App {
         if (parts.length == 2) {
             String ip = parts[0];
             port = Integer.parseInt(parts[1]);
-            node.forward(node.getProperties(), ip, port, "ping", 0, 0, 0, null);
+            node.forward(node.getTarget(), ip, port, "ping", 0, 0, 0, null);
         } else {
             System.out.println("Please check the correctness of the input and try again");
         }
@@ -168,7 +168,7 @@ public class App {
                 }
             }
         }
-        /*File g = new File("./node" + node.getProperties().getNodeId()+"/online/" + "toCreateDirectory");
+        /*File g = new File("./node" + node.getTarget().getNodeId()+"/online/" + "toCreateDirectory");
         if (!g.getParentFile().exists())
             g.getParentFile().mkdirs();*/
         System.out.println("You correctly created your offline resources.");

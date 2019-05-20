@@ -48,36 +48,8 @@ public class Forwarder implements Runnable {
         lastMessage = new HashMap<>();
         this.node = node;
 
-        if (debug) {
-            Handler consoleHandler = null;
-            Handler fileHandler = null;
-            try {
-                //Creating consoleHandler and fileHandler
-                consoleHandler = new ConsoleHandler();
-                fileHandler = new FileHandler("./node-" + node.getProperties().getNodeId() + ".log", 1024 * 1024, 1, true);
+        loggerInit(node.getProperties().getNodeId());
 
-                //Assigning handlers to LOGGER object
-                LOGGER.addHandler(consoleHandler);
-                LOGGER.addHandler(fileHandler);
-
-                //Setting levels to handlers and LOGGER
-                consoleHandler.setLevel(Level.ALL);
-                consoleHandler.setFormatter(new SimpleFormatter());
-                fileHandler.setLevel(Level.ALL);
-                LOGGER.setLevel(Level.ALL);
-                fileHandler.setFormatter(new SimpleFormatter());
-                LOGGER.config("Configuration done.");
-
-                //Console handler removed
-                LOGGER.removeHandler(consoleHandler);
-
-                LOGGER.log(Level.FINE, "Finer logged");
-            } catch (IOException exception) {
-                LOGGER.log(Level.SEVERE, "Error occur in FileHandler.", exception);
-            }
-
-            LOGGER.finer("Finest example on LOGGER handler completed.");
-        }
     }
 
     /**
@@ -109,12 +81,12 @@ public class Forwarder implements Runnable {
             if (!socketMap.containsKey(ip + ":" + port)) {
                 Socket socket = new Socket();
                 socket.setReuseAddress(true);
+
                 //Create a connection with the other node
                 socket.connect(new InetSocketAddress(ip, port));
 
                 //Get the streams
                 out = new ObjectOutputStream(socket.getOutputStream());
-                //   in = new ObjectInputStream(socket.getInputStream());
 
                 //Create the wrapper for the socket and the streams
                 clientSocket = new ClientSocket(socket, in, out);
@@ -130,6 +102,7 @@ public class Forwarder implements Runnable {
             this.clientSocket = socketMap.get(ip + ":" + port);
 
             request(request, isSuccessor, fingerIndex);
+
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
@@ -150,6 +123,8 @@ public class Forwarder implements Runnable {
         try {
             clientSocket.getOutputStream().writeObject(request);
             clientSocket.getOutputStream().flush();
+
+            listenForAck();
         } catch (IOException e) {
             if (fingerIndex == -1 && !isSuccessor) {
                 LOGGER.log(Level.WARNING, "Impossible to join the network or to reach the predecessor");
@@ -158,6 +133,10 @@ public class Forwarder implements Runnable {
                 node.retryAndUpdate(request, isSuccessor, fingerIndex);
             }
         }
+    }
+
+    private void listenForAck() {
+        //TODO Scrvi qualcosa
     }
 
     /**
@@ -208,23 +187,7 @@ public class Forwarder implements Runnable {
             socketToClose.forEach(lastMessage::remove);
         }
 
-        if (debug) {
-            LOGGER.log(Level.SEVERE, "\tSocket to close");
-            StringBuilder stringBuilder = new StringBuilder();
-            socketToClose.forEach(s -> {
-                stringBuilder.append("\t");
-                stringBuilder.append(sha1(s));
-            });
-            LOGGER.log(Level.SEVERE, stringBuilder.toString());
-
-            LOGGER.log(Level.SEVERE, "TOTAL SOCKET = " + socketMap.size());
-            StringBuilder stringBuilder2 = new StringBuilder();
-            socketMap.keySet().forEach(s -> {
-                stringBuilder2.append("\t");
-                stringBuilder2.append(sha1(s));
-            });
-            LOGGER.log(Level.SEVERE, stringBuilder2.toString());
-        }
+        logSockets(socketToClose);
 
 
         synchronized (socketMap) {
@@ -253,4 +216,63 @@ public class Forwarder implements Runnable {
         lastMessage.clear();
     }
 
+
+    /********************************************************************
+     *                                                                  *
+     *                     DEBUG METHODS                                *
+     *                                                                  *
+     ********************************************************************/
+
+    private void loggerInit(int nodeId) {
+        if (debug) {
+            Handler consoleHandler = null;
+            Handler fileHandler = null;
+            try {
+                //Creating consoleHandler and fileHandler
+                consoleHandler = new ConsoleHandler();
+                fileHandler = new FileHandler("./node-" + nodeId + ".log", 1024 * 1024, 1, true);
+
+                //Assigning handlers to LOGGER object
+                LOGGER.addHandler(consoleHandler);
+                LOGGER.addHandler(fileHandler);
+
+                //Setting levels to handlers and LOGGER
+                consoleHandler.setLevel(Level.ALL);
+                consoleHandler.setFormatter(new SimpleFormatter());
+                fileHandler.setLevel(Level.ALL);
+                LOGGER.setLevel(Level.ALL);
+                fileHandler.setFormatter(new SimpleFormatter());
+                LOGGER.config("Configuration done.");
+
+                //Console handler removed
+                LOGGER.removeHandler(consoleHandler);
+
+                LOGGER.log(Level.FINE, "Finer logged");
+            } catch (IOException exception) {
+                LOGGER.log(Level.SEVERE, "Error occur in FileHandler.", exception);
+            }
+
+            LOGGER.finer("Finest example on LOGGER handler completed.");
+        }
+    }
+
+    private void logSockets(List<String> socketToClose) {
+        if (debug) {
+            LOGGER.log(Level.SEVERE, "\tSocket to close");
+            StringBuilder stringBuilder = new StringBuilder();
+            socketToClose.forEach(s -> {
+                stringBuilder.append("\t");
+                stringBuilder.append(sha1(s));
+            });
+            LOGGER.log(Level.SEVERE, stringBuilder.toString());
+
+            LOGGER.log(Level.SEVERE, "TOTAL SOCKET = " + socketMap.size());
+            StringBuilder stringBuilder2 = new StringBuilder();
+            socketMap.keySet().forEach(s -> {
+                stringBuilder2.append("\t");
+                stringBuilder2.append(sha1(s));
+            });
+            LOGGER.log(Level.SEVERE, stringBuilder2.toString());
+        }
+    }
 }
