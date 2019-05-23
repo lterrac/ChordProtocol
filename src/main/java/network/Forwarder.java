@@ -102,11 +102,15 @@ public class Forwarder implements Runnable {
 
                 this.clientSocket = socketMap.get(ip + ":" + port);
 
+                //If you're not listening for an Ack, do it
+                if (clientSocket.isAckListenerDone()) {
+                    clientSocket.listenForAck(node, request.getAck());
+                }
+
+                //Write the message to the ouput stream
                 request(request);
 
-                if (clientSocket.isAckListenerDone())
-                    clientSocket.listenForAck(node, request.getAck());
-
+                //Enqueue the request into the AckTimer in order to send again in case of crash
                 clientSocket.enqueueRequest(request);
             }
 
@@ -142,7 +146,11 @@ public class Forwarder implements Runnable {
         }
     }
 
-
+    /**
+     * Defuse the timer for the given ClientSocket
+     *
+     * @param ipAndPort
+     */
     public void ackReceived(String ipAndPort) {
         ClientSocket clientSocket;
         synchronized (socketMap) {

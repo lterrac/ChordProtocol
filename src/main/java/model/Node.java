@@ -2,6 +2,9 @@ package model;
 
 import network.Forwarder;
 import network.NodeSocketServer;
+import network.requests.Ack.FingerAck;
+import network.requests.Ack.PredecessorAck;
+import network.requests.Ack.UnknownAck;
 import network.requests.*;
 
 import java.io.File;
@@ -44,6 +47,9 @@ public class Node {
      * Contains information about the node
      */
     private NodeProperties properties;
+
+    private String senderIp;
+    private int senderPort;
 
 
     /**
@@ -88,10 +94,6 @@ public class Node {
     }
 
     // Getter
-
-    public Deque<NodeProperties> getSuccessors() {
-        return successors;
-    }
 
     public NodeProperties getProperties() {
         return properties;
@@ -201,8 +203,7 @@ public class Node {
      */
     public void join(String ip, int port) {
         startNode();
-        forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties), false, -1);
-
+        forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties, new UnknownAck(senderIp, senderPort)));
         startThreads();
         nodeSocketServer = new NodeSocketServer(this);
 
@@ -242,8 +243,10 @@ public class Node {
         else {
             File folder = new File("./node" + this.getProperties().getNodeId() + "/offline");
             File[] allFiles = folder.listFiles();
+
             for (File file : allFiles) {
-                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null, file), true, -1);
+                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null, file,
+                        new FingerAck(true, -1, senderIp, senderPort)));
                 file.delete();
             }
         }
@@ -255,7 +258,8 @@ public class Node {
      * Ask to the successor if it holds some resources that needs to be managed by the current node
      */
     public void askSuccessorForResources() {
-        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new AskSuccessorResourcesRequest(this.getProperties()), true, -1);
+        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(),
+                new AskSuccessorResourcesRequest(this.getProperties(), new FingerAck(true, -1, senderIp, senderPort)));
     }
 
     /**
@@ -264,13 +268,14 @@ public class Node {
      * be already set by the {@link #notifySuccessor(NodeProperties)}
      *
      * @param nodeProperties predecessor of the node
+     *
      */
     public void giveResourcesToPredecessor(NodeProperties nodeProperties) {
         File folder = new File("./node" + this.getProperties().getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
         for (File f : allFiles) {
             if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
-                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties, f),false, -1);
+                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties, f, new UnknownAck(senderIp, senderPort)));
                 f.delete();
             }
         }
@@ -283,9 +288,9 @@ public class Node {
      */
     private void startNode() {
         serverSocket = createServerSocket();
-        int port = serverSocket.getLocalPort();
-        String ipAddress = getCurrentIp();
-        initializeNode(ipAddress, port);
+        senderIp = getCurrentIp();
+        senderPort = serverSocket.getLocalPort();
+        initializeNode(senderIp, senderPort);
         forwarder = new Forwarder(this);
         foldersCreation();
     }
@@ -321,8 +326,8 @@ public class Node {
      * TODO Non ne ho idea :)
      */
     public void notifyNeighbours() {
-        forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getPort(), new UpdateSuccessorRequest(successor()));
-        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new UpdatePredecessorRequest(getPredecessor()));
+        forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getPort(), new UpdateSuccessorRequest(successor(), new PredecessorAck(senderIp, senderPort)));
+        forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new UpdatePredecessorRequest(getPredecessor(), new FingerAck(true, -1, senderIp, senderPort)));
     }
 
     /**
@@ -697,8 +702,7 @@ public class Node {
         return newList;
     }
 
-    public void retryAndUpdate(Deque<Request> requests, boolean isSuccessor, int fingerIndex) {
-        requests.forEach(request -> {
+    public void retryAndUpdate(Request request, boolean isSuccessor, int fingerIndex) {
             if (isSuccessor) {
                 // update the successor
                 setSuccessor(successors.removeFirst());
@@ -711,7 +715,7 @@ public class Node {
                 // send again
                 forwarder.makeRequest(fingers[fingerIndex - 1].getIpAddress(), fingers[fingerIndex - 1].getPort(), request, false);
             }
-        });
+
     }
 }
 

@@ -1,9 +1,9 @@
 package network.requests.Ack;
 
 import model.Node;
+import network.requests.DistributeResourceRequest;
 import network.requests.Request;
 
-import java.util.Deque;
 
 public class PredecessorAck extends Ack {
 
@@ -12,7 +12,13 @@ public class PredecessorAck extends Ack {
     }
 
     @Override
-    public void recovery(Node node, Deque<Request> requests) {
+    public void recovery(Node node, Request request) {
         node.setPredecessor(null);
+
+        //TODO Write better
+        if (request instanceof DistributeResourceRequest)
+            node.saveFile(((DistributeResourceRequest) request).getFile());
+
+
     }
 }

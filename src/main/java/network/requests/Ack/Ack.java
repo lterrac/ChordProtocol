@@ -5,8 +5,6 @@ import model.Node;
 import network.RequestHandler;
 import network.requests.Request;
 
-import java.util.Deque;
-
 public abstract class Ack {
     private final String senderIp;
     private final int senderPort;
@@ -24,5 +22,11 @@ public abstract class Ack {
         handler.handle(this);
     }
 
-    public abstract void recovery(Node node, Deque<Request> requests);
+    /**
+     * recovers the request in case that the target node is unreachable
+     *
+     * @param node
+     * @param request
+     */
+    public abstract void recovery(Node node, Request request);
 }

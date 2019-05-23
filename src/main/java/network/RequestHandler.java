@@ -70,6 +70,12 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         }
     }
 
+    /**
+     * Whenever a request is received send back the ack contained in the request
+     *
+     * @param request
+     * @throws IOException
+     */
     private void ack(RequestWithAck request) throws IOException {
         out.writeObject(request.getAck());
     }
@@ -107,6 +113,10 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     }
 
 
+    /**
+     * Whenever an ack is received contact the given client socket and stop the timer
+     * @param request
+     */
     @Override
     public void handle(Ack request) {
         node.getForwarder().ackReceived(request.getIpAndPort());

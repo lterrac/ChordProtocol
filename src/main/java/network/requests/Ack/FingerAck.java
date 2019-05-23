@@ -3,8 +3,6 @@ package network.requests.Ack;
 import model.Node;
 import network.requests.Request;
 
-import java.util.Deque;
-
 public class FingerAck extends Ack {
 
     private final boolean isSuccessor;
@@ -16,8 +14,14 @@ public class FingerAck extends Ack {
         this.fingerIndex = fingerIndex;
     }
 
+    /**
+     * If the node try to contact a finger and it does not respond, try to send it to another node
+     *
+     * @param node
+     * @param requests
+     */
     @Override
-    public void recovery(Node node, Deque<Request> requests) {
+    public void recovery(Node node, Request requests) {
         node.retryAndUpdate(requests, isSuccessor, fingerIndex);
     }
 }
