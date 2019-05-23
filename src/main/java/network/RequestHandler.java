@@ -1,6 +1,8 @@
 package network;
 
-import model.*;
+import model.Node;
+import network.requests.Ack.Ack;
+import network.requests.Ack.UnknownAck;
 import network.requests.*;
 
 import java.io.EOFException;
@@ -21,10 +23,10 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     private boolean stop;
     private Node node;
 
-    public RequestHandler(Socket client, Node node) throws IOException {
-        this.client = client;
-        this.out = new ObjectOutputStream(client.getOutputStream());
-        this.in = new ObjectInputStream(client.getInputStream());
+    public RequestHandler(ClientSocket client, Node node) {
+        this.client = client.getSocket();
+        this.out = client.getOut();
+        this.in = client.getIn();
         this.node = node;
         stop = false;
     }
@@ -51,10 +53,10 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
             */
 
             //Read request
-            Request request = (Request) in.readObject();
+            RequestWithAck request = (RequestWithAck) in.readObject();
 
             //send ACK
-            ack();
+            ack(request);
 
             //Handle request
             request.handleRequest(this);
@@ -68,8 +70,8 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         }
     }
 
-    private void ack() throws IOException {
-        out.writeObject(new Ack());
+    private void ack(RequestWithAck request) throws IOException {
+        out.writeObject(request.getAck());
     }
 
     private void stopping() {
@@ -107,7 +109,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(Ack request) {
-       //TODO Scrivi qualcosa
+        node.getForwarder().ackReceived(request.getIpAndPort());
     }
 
     //search for the successor of the node received from the network
@@ -166,9 +168,11 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(CheckPredecessorRequest request) {
-        String senderIp = request.getProperties().getIpAddress();
-        int senderPort = request.getProperties().getPort();
-        node.getForwarder().makeRequest( senderIp, senderPort, new CheckPredecessorReplyRequest(node.getProperties()));
+        String senderIp = node.getProperties().getIpAddress();
+        int senderPort = node.getProperties().getPort();
+        String targetIp = request.getProperties().getIpAddress();
+        int targetPort = request.getProperties().getPort();
+        node.getForwarder().makeRequest(targetIp, targetPort, new CheckPredecessorReplyRequest(node.getProperties(), new UnknownAck(senderIp, senderPort)));
     }
 
     @Override
@@ -185,11 +189,13 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     @Override
     public void handle(PredecessorRequest request) {
 
-        String receiverIp = request.getProperties().getIpAddress();
-        int receiverPort = request.getProperties().getPort();
+        String senderIp = node.getProperties().getIpAddress();
+        int senderPort = node.getProperties().getPort();
+        String targetIp = request.getProperties().getIpAddress();
+        int targetPort = request.getProperties().getPort();
 
         //TODO Check if it is the right behaviour
-        node.getForwarder().makeRequest( receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor(), node.getCustomizedSuccessors()));
+        node.getForwarder().makeRequest(targetIp, targetPort, new PredecessorReplyRequest(node.getPredecessor(), node.getCustomizedSuccessors(), new UnknownAck(senderIp, senderPort)));
     }
 
     //Once the predecessor is arrived, set it into the dedicated thread and call notify()

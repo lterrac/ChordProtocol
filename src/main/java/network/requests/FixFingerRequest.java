@@ -2,14 +2,16 @@ package network.requests;
 
 import model.NodeProperties;
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
-public class FixFingerRequest implements Request {
+public class FixFingerRequest extends RequestWithAck {
 
     private NodeProperties properties;
     private int fixId;
     private int fixIndex;
 
-    public FixFingerRequest(NodeProperties properties, int fixId, int fixIndex) {
+    public FixFingerRequest(NodeProperties properties, int fixId, int fixIndex, Ack ack) {
+        super(ack);
         this.properties = properties;
         this.fixId = fixId;
         this.fixIndex = fixIndex;

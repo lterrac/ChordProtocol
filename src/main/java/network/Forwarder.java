@@ -3,6 +3,7 @@ package network;
 
 import model.Node;
 import network.requests.Request;
+import network.requests.RequestWithAck;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -72,43 +73,50 @@ public class Forwarder implements Runnable {
      * @param port    Port of the target node
      * @param request Request to send
      */
-    public synchronized void makeRequest(String ip, int port, Request request, boolean isSuccessor, int fingerIndex) {
+    public synchronized void makeRequest(String ip, int port, RequestWithAck request) {
 
         try {
             ObjectOutputStream out;
             ObjectInputStream in = null;
 
-            if (!socketMap.containsKey(ip + ":" + port)) {
-                Socket socket = new Socket();
-                socket.setReuseAddress(true);
+            synchronized (socketMap) {
+                if (!socketMap.containsKey(ip + ":" + port)) {
+                    Socket socket = new Socket();
+                    socket.setReuseAddress(true);
 
-                //Create a connection with the other node
-                socket.connect(new InetSocketAddress(ip, port));
+                    //Create a connection with the other node
+                    socket.connect(new InetSocketAddress(ip, port));
 
-                //Get the streams
-                out = new ObjectOutputStream(socket.getOutputStream());
+                    //Get the streams
+                    out = new ObjectOutputStream(socket.getOutputStream());
 
-                //Create the wrapper for the socket and the streams
-                clientSocket = new ClientSocket(socket, in, out);
+                    //Create the wrapper for the socket and the streams
+                    clientSocket = new ClientSocket(socket, in, out);
 
-                //Add the wrapper to the Hashmaps
-                socketMap.put(ip + ":" + port, clientSocket);
-                addToLastMessage(ip, port);
+                    //Add the wrapper to the Hashmaps
+                    socketMap.put(ip + ":" + port, clientSocket);
+                    addToLastMessage(ip, port);
+                }
+                //Update the last time a message is sent
+                updateLastMessage(ip, port);
+
+                this.clientSocket = socketMap.get(ip + ":" + port);
+
+                request(request);
+
+                if (clientSocket.isAckListenerDone())
+                    clientSocket.listenForAck(node, request.getAck());
+
+                clientSocket.enqueueRequest(request);
             }
-
-            //Update the last time a message is sent
-            updateLastMessage(ip, port);
-
-            this.clientSocket = socketMap.get(ip + ":" + port);
-
-            request(request, isSuccessor, fingerIndex);
-
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
             e.printStackTrace();
             lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()));
-            socketMap.remove(ip + ":" + port);
+            synchronized (socketMap) {
+                socketMap.remove(ip + ":" + port);
+            }
             clientSocket.close();
         }
     }
@@ -118,27 +126,33 @@ public class Forwarder implements Runnable {
      *
      * @param request Request to send
      */
-    public void request(Request request, boolean isSuccessor, int fingerIndex) {
+    public void request(Request request) {
 
         try {
-            clientSocket.getOutputStream().writeObject(request);
-            clientSocket.getOutputStream().flush();
-
-            listenForAck();
+            clientSocket.getOut().writeObject(request);
+            clientSocket.getOut().flush();
         } catch (IOException e) {
+            /*
             if (fingerIndex == -1 && !isSuccessor) {
                 LOGGER.log(Level.WARNING, "Impossible to join the network or to reach the predecessor");
                 node.setPredecessor(null);
             } else {
                 node.retryAndUpdate(request, isSuccessor, fingerIndex);
-            }
+            }*/
         }
     }
 
-    private void listenForAck() {
-        //TODO Scrvi qualcosa
-    }
 
+    public void ackReceived(String ipAndPort) {
+        ClientSocket clientSocket;
+        synchronized (socketMap) {
+            clientSocket = socketMap.get(ipAndPort);
+        }
+
+        if (clientSocket != null) {
+            clientSocket.ackReceived();
+        }
+    }
     /**
      * Update last time a message is sent to a specific client
      *

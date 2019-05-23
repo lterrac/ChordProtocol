@@ -2,15 +2,17 @@ package network.requests;
 
 import model.NodeProperties;
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
 import java.util.Deque;
 
-public class PredecessorReplyRequest implements Request {
+public class PredecessorReplyRequest extends RequestWithAck {
 
     private NodeProperties properties;
     private Deque<NodeProperties> successors;
 
-    public PredecessorReplyRequest(NodeProperties properties, Deque<NodeProperties> successors) {
+    public PredecessorReplyRequest(NodeProperties properties, Deque<NodeProperties> successors, Ack ack) {
+        super(ack);
         this.properties = properties;
         this.successors = successors;
     }

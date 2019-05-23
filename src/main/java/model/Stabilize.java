@@ -1,5 +1,6 @@
 package model;
 
+import network.requests.Ack.FingerAck;
 import network.requests.NotifyRequest;
 import network.requests.PredecessorRequest;
 
@@ -25,7 +26,14 @@ public class Stabilize implements Runnable {
 
         if (!successor.equals(currentNode)) {
             //Ask to the successor for its predecessor
-            node.getForwarder().makeRequest(successor.getIpAddress(), successor.getPort(), new PredecessorRequest(currentNode));
+
+            String successorIp = node.successor().getIpAddress();
+            int successorPort = node.successor().getPort();
+            String senderIp = node.getProperties().getIpAddress();
+            int senderPort = node.getProperties().getPort();
+
+            node.getForwarder().makeRequest(successorIp, successorPort, new PredecessorRequest(currentNode,
+                    new FingerAck(true, -1, senderIp, senderPort)));
 
         } else {
             if (node.isPredecessorSet()) {
@@ -49,7 +57,12 @@ public class Stabilize implements Runnable {
             }
         }
 
+        String successorIp = node.successor().getIpAddress();
+        int successorPort = node.successor().getPort();
+        String senderIp = node.getProperties().getIpAddress();
+        int senderPort = node.getProperties().getPort();
+
         //Inform the new successor that the current node might be its predecessor
-        node.getForwarder().makeRequest(node.successor().getIpAddress(), node.successor().getPort(), new NotifyRequest(currentNode));
+        node.getForwarder().makeRequest(successorIp, successorPort, new NotifyRequest(currentNode, new FingerAck(true, -1, senderIp, senderPort)));
     }
 }

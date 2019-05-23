@@ -2,15 +2,17 @@ package network.requests;
 
 import model.NodeProperties;
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
 import java.io.File;
 
-public class DistributeResourceRequest implements Request {
+public class DistributeResourceRequest extends RequestWithAck {
 
     private File file;
     private NodeProperties properties;
 
-    public DistributeResourceRequest(NodeProperties properties, File file) {
+    public DistributeResourceRequest(NodeProperties properties, File file, Ack ack) {
+        super(ack);
         this.file = file;
         this.properties=properties;
     }

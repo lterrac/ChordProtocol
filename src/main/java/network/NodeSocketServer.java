@@ -3,6 +3,8 @@ package network;
 import model.Node;
 
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -35,7 +37,9 @@ public class NodeSocketServer implements Runnable {
 
             try {
                 client = node.getServerSocket().accept();
-                pool.submit(new RequestHandler(client, node));
+                ;
+                pool.submit(new RequestHandler(new ClientSocket(client, new ObjectInputStream(client.getInputStream()),
+                        new ObjectOutputStream(client.getOutputStream())), node));
             } catch (IOException e) {
                 e.printStackTrace();
             }

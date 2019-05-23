@@ -1,5 +1,6 @@
 package network;
 
+import network.requests.Ack.Ack;
 import network.requests.*;
 
 public interface RequestHandlerInterface {

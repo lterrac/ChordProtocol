@@ -697,22 +697,21 @@ public class Node {
         return newList;
     }
 
-    public void retryAndUpdate(Request request, boolean isSuccessor, int fingerIndex) {
-        if (isSuccessor) {
-            // update the successor
-            setSuccessor(successors.removeFirst());
+    public void retryAndUpdate(Deque<Request> requests, boolean isSuccessor, int fingerIndex) {
+        requests.forEach(request -> {
+            if (isSuccessor) {
+                // update the successor
+                setSuccessor(successors.removeFirst());
 
-            // send again
-            forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), request, true);
-        } else {
-            fingers[fingerIndex] = null;
+                // send again
+                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), request, true);
+            } else {
+                fingers[fingerIndex] = null;
 
-            // send again
-            forwarder.makeRequest(fingers[fingerIndex - 1].getIpAddress(), fingers[fingerIndex - 1].getPort(), request, false);
-        }
-
-
-
+                // send again
+                forwarder.makeRequest(fingers[fingerIndex - 1].getIpAddress(), fingers[fingerIndex - 1].getPort(), request, false);
+            }
+        });
     }
 }
 

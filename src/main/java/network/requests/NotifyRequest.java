@@ -2,12 +2,14 @@ package network.requests;
 
 import model.NodeProperties;
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
-public class NotifyRequest implements Request {
+public class NotifyRequest extends RequestWithAck {
 
     private NodeProperties properties;
 
-    public NotifyRequest(NodeProperties properties) {
+    public NotifyRequest(NodeProperties properties, Ack ack) {
+        super(ack);
         this.properties = properties;
     }
 

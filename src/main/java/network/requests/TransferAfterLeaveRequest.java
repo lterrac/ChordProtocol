@@ -1,14 +1,16 @@
 package network.requests;
 
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
 import java.io.File;
 
-public class TransferAfterLeaveRequest implements Request {
+public class TransferAfterLeaveRequest extends RequestWithAck {
 
     private File file;
 
-    public TransferAfterLeaveRequest(File file) {
+    public TransferAfterLeaveRequest(File file, Ack ack) {
+        super(ack);
         this.file = file;
     }
 

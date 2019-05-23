@@ -2,13 +2,15 @@ package network.requests;
 
 import model.NodeProperties;
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
-public class LookupReplyRequest implements Request {
+public class LookupReplyRequest extends RequestWithAck {
 
     private NodeProperties properties;
     private int key;
 
-    public LookupReplyRequest(NodeProperties properties, int key) {
+    public LookupReplyRequest(NodeProperties properties, int key, Ack ack) {
+        super(ack);
         this.properties = properties;
         this.key = key;
     }

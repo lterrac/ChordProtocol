@@ -3,12 +3,14 @@ package network.requests;
 
 import model.NodeProperties;
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
-public class PredecessorRequest implements Request {
+public class PredecessorRequest extends RequestWithAck {
 
     private NodeProperties properties;
 
-    public PredecessorRequest(NodeProperties properties) {
+    public PredecessorRequest(NodeProperties properties, Ack ack) {
+        super(ack);
         this.properties = properties;
     }
 

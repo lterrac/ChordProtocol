@@ -2,13 +2,14 @@ package network.requests;
 
 import model.NodeProperties;
 import network.RequestHandler;
+import network.requests.Ack.Ack;
 
-public class UpdateSuccessorRequest implements Request {
+public class UpdateSuccessorRequest extends RequestWithAck {
 
     private NodeProperties properties;
 
-    public UpdateSuccessorRequest(NodeProperties properties) {
-
+    public UpdateSuccessorRequest(NodeProperties properties, Ack ack) {
+        super(ack);
         this.properties = properties;
     }
 
