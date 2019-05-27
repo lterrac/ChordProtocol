@@ -2,7 +2,6 @@ package network;
 
 import model.AckTimer;
 import model.Node;
-import network.requests.Ack.Ack;
 import network.requests.RequestWithAck;
 
 import java.io.IOException;
@@ -19,7 +18,7 @@ import static model.NodeProperties.PING_PERIOD;
 /**
  * Wrapper for the socket and its streams
  */
-public class ClientSocket implements Runnable {
+public class ClientSocket {
     private Socket socket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
@@ -64,27 +63,22 @@ public class ClientSocket implements Runnable {
      * @return true if exists
      */
     public boolean isAckListenerDone() {
-        if (ackListenerDone != null)
+        if (ackListenerDone != null) {
+            System.out.println("Future not null " + ackListenerDone.isDone());
             ackListenerDone.isDone();
-        return false;
+        }
+
+        System.out.println("Future null");
+        return true;
     }
 
     /**
      * Start the ackListener Thread and creates a new timer
      * @param node
-     * @param ack
      */
-    public void listenForAck(Node node, Ack ack) {
+    public void listenForAck(Node node) {
         ackTimer = new AckTimer(node);
-        ackListenerDone = ackListenerThread.submit(this);
-    }
-
-    /**
-     * Method executed by the ackListener Thread that schedules the timer
-     */
-    @Override
-    public void run() {
-        new Timer().schedule(ackTimer, PING_PERIOD);
+        ackListenerDone = ackListenerThread.submit(() -> new Timer().schedule(ackTimer, PING_PERIOD));
     }
 
     /**

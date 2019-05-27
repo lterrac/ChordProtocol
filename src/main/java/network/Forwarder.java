@@ -104,14 +104,14 @@ public class Forwarder implements Runnable {
 
                 //If you're not listening for an Ack, do it
                 if (clientSocket.isAckListenerDone()) {
-                    clientSocket.listenForAck(node, request.getAck());
+                    clientSocket.listenForAck(node);
                 }
-
-                //Write the message to the ouput stream
-                request(request);
 
                 //Enqueue the request into the AckTimer in order to send again in case of crash
                 clientSocket.enqueueRequest(request);
+
+                //Write the message to the ouput stream
+                request(request);
             }
 
         } catch (IOException e) {
@@ -161,6 +161,7 @@ public class Forwarder implements Runnable {
             clientSocket.ackReceived();
         }
     }
+
     /**
      * Update last time a message is sent to a specific client
      *

@@ -14,6 +14,7 @@ public class AckTimer extends TimerTask {
     private Deque<RequestWithAck> messageQueue;
 
     public AckTimer(Node node) {
+        System.out.println("Create timer");
         this.stop = new AtomicBoolean(false);
         this.node = node;
         messageQueue = new ArrayDeque<>();
@@ -24,12 +25,14 @@ public class AckTimer extends TimerTask {
      */
     @Override
     public void run() {
+        System.out.println("exec");
         if (!stop.get()){
             messageQueue.forEach(requestWithAck -> requestWithAck.getAck().recovery(node, requestWithAck));
         }
     }
 
     public void stop() {
+        System.out.println("defuse");
         stop.set(true);
     }
 

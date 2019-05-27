@@ -32,8 +32,9 @@ public class Stabilize implements Runnable {
             String senderIp = node.getProperties().getIpAddress();
             int senderPort = node.getProperties().getPort();
 
-            node.getForwarder().makeRequest(successorIp, successorPort, new PredecessorRequest(currentNode,
-                    new FingerAck(true, -1, senderIp, senderPort)));
+            node.getForwarder().makeRequest(successorIp, successorPort,
+                    new PredecessorRequest(currentNode,
+                            new FingerAck(true, -1, false, null, senderIp, senderPort)));
 
         } else {
             if (node.isPredecessorSet()) {
@@ -63,6 +64,6 @@ public class Stabilize implements Runnable {
         int senderPort = node.getProperties().getPort();
 
         //Inform the new successor that the current node might be its predecessor
-        node.getForwarder().makeRequest(successorIp, successorPort, new NotifyRequest(currentNode, new FingerAck(true, -1, senderIp, senderPort)));
+        node.getForwarder().makeRequest(successorIp, successorPort, new NotifyRequest(currentNode, new FingerAck(true, -1, false, null, senderIp, senderPort)));
     }
 }

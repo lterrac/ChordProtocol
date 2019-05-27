@@ -3,9 +3,11 @@ package network.requests.Ack;
 
 import model.Node;
 import network.RequestHandler;
-import network.requests.Request;
+import network.requests.RequestWithAck;
 
-public abstract class Ack {
+import java.io.Serializable;
+
+public abstract class Ack implements Serializable {
     private final String senderIp;
     private final int senderPort;
 
@@ -24,9 +26,8 @@ public abstract class Ack {
 
     /**
      * recovers the request in case that the target node is unreachable
-     *
-     * @param node
+     *  @param node
      * @param request
      */
-    public abstract void recovery(Node node, Request request);
+    public abstract void recovery(Node node, RequestWithAck request);
 }
