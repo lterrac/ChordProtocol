@@ -52,11 +52,12 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
               example : RequestObj request = ((RequestObj) in.readObject()).handle(node);
             */
 
-            //Read request
-            RequestWithAck request = (RequestWithAck) in.readObject();
+            Request request;
 
-            //send ACK
-            ack(request);
+            //Read request
+            synchronized (in) {
+                request = (Request) in.readObject();
+            }
 
             //Handle request
             request.handleRequest(this);
@@ -73,11 +74,11 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     /**
      * Whenever a request is received send back the ack contained in the request
      *
-     * @param request
+     * @param ack the ack to write back in the stream
      * @throws IOException
      */
-    private void ack(RequestWithAck request) throws IOException {
-        out.writeObject(request.getAck());
+    public void ack(Ack ack) {
+        node.getForwarder().sendAck(ack);
     }
 
     private void stopping() {

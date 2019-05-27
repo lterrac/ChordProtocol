@@ -2,6 +2,7 @@ package network;
 
 
 import model.Node;
+import network.requests.Ack.Ack;
 import network.requests.Request;
 import network.requests.RequestWithAck;
 
@@ -119,7 +120,7 @@ public class Forwarder implements Runnable {
             e.printStackTrace();
             lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()));
             synchronized (socketMap) {
-                socketMap.remove(ip + ":" + port);
+                (socketMap.remove(ip + ":" + port)).close();
             }
             clientSocket.close();
         }
@@ -130,12 +131,12 @@ public class Forwarder implements Runnable {
      *
      * @param request Request to send
      */
-    public void request(Request request) {
-
+    public synchronized void request(Request request) {
         try {
             clientSocket.getOut().writeObject(request);
             clientSocket.getOut().flush();
         } catch (IOException e) {
+
             /*
             if (fingerIndex == -1 && !isSuccessor) {
                 LOGGER.log(Level.WARNING, "Impossible to join the network or to reach the predecessor");
@@ -143,6 +144,17 @@ public class Forwarder implements Runnable {
             } else {
                 node.retryAndUpdate(request, isSuccessor, fingerIndex);
             }*/
+        }
+    }
+
+
+    public void sendAck(Ack ack) {
+        ClientSocket clientSocket;
+        synchronized (socketMap) {
+            clientSocket = socketMap.get(ack.getIpAndPort());
+        }
+        if (clientSocket != null) {
+            request(ack);
         }
     }
 
@@ -156,10 +168,8 @@ public class Forwarder implements Runnable {
         synchronized (socketMap) {
             clientSocket = socketMap.get(ipAndPort);
         }
-
-        if (clientSocket != null) {
+        if (clientSocket != null)
             clientSocket.ackReceived();
-        }
     }
 
     /**

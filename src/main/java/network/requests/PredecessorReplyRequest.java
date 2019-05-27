@@ -23,6 +23,7 @@ public class PredecessorReplyRequest extends RequestWithAck {
 
     @Override
     public void handleRequest(RequestHandler handler) {
+        handler.ack(getAck());
         handler.handle(this);
     }
 

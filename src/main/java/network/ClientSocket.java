@@ -1,6 +1,5 @@
 package network;
 
-import model.AckTimer;
 import model.Node;
 import network.requests.RequestWithAck;
 
@@ -8,20 +7,26 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Timer;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static model.NodeProperties.PING_PERIOD;
 
 /**
  * Wrapper for the socket and its streams
  */
-public class ClientSocket {
+class ClientSocket {
     private Socket socket;
     private ObjectInputStream in;
     private ObjectOutputStream out;
+
+    private final AtomicBoolean stop;
+    private Deque<RequestWithAck> messageQueue;
+
 
     /**
      * Future that check if the {@link #ackListenerThread} has finished
@@ -33,27 +38,26 @@ public class ClientSocket {
      */
     private ExecutorService ackListenerThread;
 
-    /**
-     * The timer responsible for the recovery of the messages
-     */
-    private AckTimer ackTimer;
-
-    public ClientSocket(Socket socket, ObjectInputStream in, ObjectOutputStream out) {
+    ClientSocket(Socket socket, ObjectInputStream in, ObjectOutputStream out) {
         this.socket = socket;
         this.in = in;
         this.out = out;
         ackListenerThread = Executors.newSingleThreadExecutor();
+        stop = new AtomicBoolean(false);
+        messageQueue = new ArrayDeque<>();
+
+
     }
 
-    public ObjectOutputStream getOut() {
+    ObjectOutputStream getOut() {
         return out;
     }
 
-    public Socket getSocket() {
+    Socket getSocket() {
         return socket;
     }
 
-    public ObjectInputStream getIn() {
+    ObjectInputStream getIn() {
         return in;
     }
 
@@ -62,23 +66,29 @@ public class ClientSocket {
      *
      * @return true if exists
      */
-    public boolean isAckListenerDone() {
-        if (ackListenerDone != null) {
-            System.out.println("Future not null " + ackListenerDone.isDone());
-            ackListenerDone.isDone();
-        }
-
-        System.out.println("Future null");
-        return true;
+    boolean isAckListenerDone() {
+        if (ackListenerDone != null) return ackListenerDone.isDone();
+        else return true;
     }
 
     /**
      * Start the ackListener Thread and creates a new timer
      * @param node
      */
-    public void listenForAck(Node node) {
-        ackTimer = new AckTimer(node);
-        ackListenerDone = ackListenerThread.submit(() -> new Timer().schedule(ackTimer, PING_PERIOD));
+    void listenForAck(Node node) {
+        ackListenerDone = ackListenerThread.submit(() -> {
+            try {
+                Thread.sleep(PING_PERIOD);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            if (!stop.get()) {
+                System.out.println("node " + socket.getInetAddress() + ":" + socket.getLocalPort() + " not reachable");
+                messageQueue.forEach(requestWithAck -> requestWithAck.getAck().recovery(node, requestWithAck));
+                messageQueue.clear();
+            }
+        });
     }
 
     /**
@@ -86,19 +96,21 @@ public class ClientSocket {
      *
      * @param request
      */
-    public void enqueueRequest(RequestWithAck request) {
-        ackTimer.enqueue(request);
+    void enqueueRequest(RequestWithAck request) {
+        messageQueue.addLast(request);
     }
 
     /**
      * When Ack is received stop the timer
      */
-    public void ackReceived() {
-        ackTimer.stop();
+    void ackReceived() {
+        stop.set(true);
     }
 
-    public void close() {
+    void close() {
         try {
+            ackListenerThread.shutdown();
+            stop.set(true);
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();

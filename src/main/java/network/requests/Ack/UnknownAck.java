@@ -18,6 +18,4 @@ public class UnknownAck extends Ack {
             node.saveFile(((DistributeResourceRequest) request).getFile());
 
     }
-
-
 }
