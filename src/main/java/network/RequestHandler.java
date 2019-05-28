@@ -170,12 +170,18 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(LookupRequest request) {
-        node.lookup(request.getProperties(), request.getKey());
+        node.lookup(request.getProperties(), request.getKey(), request.getTransfer(),request.getFile());
     }
 
     @Override
     public void handle(LookupReplyRequest request) {
-        System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId());
+        if(request.getTransfer()==false) {
+            System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId() + ", whose ip is: " + request.getProperties().getIpAddress() + " and whose port is: " + request.getProperties().getPort());
+        }
+        else{
+            node.getForwarder().makeRequest(request.getProperties().getIpAddress(),request.getProperties().getPort(),new DistributeResourceRequest(null,request.getFile()));
+
+        }
     }
 
     @Override
