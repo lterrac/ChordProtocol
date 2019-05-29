@@ -139,7 +139,7 @@ public class Forwarder implements Runnable {
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
-            e.printStackTrace();
+            System.out.println("Removed socket of node " + sha1(ip + ":" + port));
             lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()));
             socketMap.remove(ip + ":" + port);
             clientSocket.close();
@@ -151,13 +151,13 @@ public class Forwarder implements Runnable {
      * Writes a {@link network.requests.Request} into the output stream of {@link #clientSocket}.
      * @param request Request to send
      */
-    public void request(Request request) {
+    public void request(Request request) throws IOException {
 
         try {
             clientSocket.getOutputStream().writeObject(request);
             clientSocket.getOutputStream().flush();
         } catch (IOException e) {
-            System.exit(0);
+            throw new IOException();
         }
     }
 
