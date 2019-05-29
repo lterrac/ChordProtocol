@@ -7,12 +7,18 @@ import java.io.File;
 
 public class DistributeResourceRequest implements Request {
 
+    private boolean backup;
     private File file;
     private NodeProperties properties;
 
-    public DistributeResourceRequest(NodeProperties properties, File file) {
+    public DistributeResourceRequest(NodeProperties properties, File file, boolean backup) {
         this.file = file;
         this.properties=properties;
+        this.backup = backup;
+    }
+
+    public boolean isBackup() {
+        return backup;
     }
 
     public File getFile() {

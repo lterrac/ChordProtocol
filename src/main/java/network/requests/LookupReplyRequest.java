@@ -3,14 +3,28 @@ package network.requests;
 import model.NodeProperties;
 import network.RequestHandler;
 
+import java.io.File;
+
 public class LookupReplyRequest implements Request {
 
+    private File file;
+    private boolean transfer;
     private NodeProperties properties;
     private int key;
 
-    public LookupReplyRequest(NodeProperties properties, int key) {
+    public LookupReplyRequest(NodeProperties properties, int key, boolean transfer, File file) {
         this.properties = properties;
         this.key = key;
+        this.transfer = transfer;
+        this.file = file;
+    }
+
+    public File getFile() {
+        return file;
+    }
+
+    public boolean isTransfer() {
+        return transfer;
     }
 
     public NodeProperties getProperties() {

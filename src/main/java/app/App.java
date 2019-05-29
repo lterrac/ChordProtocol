@@ -84,6 +84,9 @@ public class App {
                 case 9:
                     node.printSuccessors();
                     break;
+                case 10:
+                    printResources("backup");
+                    break;
                 case 0: // Leave the network
                     System.out.println("The node has left the network!");
                     exit();
@@ -128,7 +131,7 @@ public class App {
     private static void lookup() {
         System.out.println("Insert the key you are looking for (it must be in the range [0," + KEY_SIZE + "]):");
         int key = intScanner.nextInt();
-        node.lookup(node.getProperties(), key);
+        node.lookup(node.getProperties(), key, false, null);
 
         System.out.println("------------------------------------------\n");
     }
