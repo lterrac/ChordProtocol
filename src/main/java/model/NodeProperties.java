@@ -16,12 +16,14 @@ public class NodeProperties implements Serializable {
 
     private final int nodeId;
     private String ipAddress;
-    private int port;
+    private int tcpServerPort;
+    private int udpServerPort;
 
-    public NodeProperties(int nodeId, String ipAddress, int port) {
+    public NodeProperties(int nodeId, String ipAddress, int tcpServerPort, int udpServerPort) {
         this.nodeId = nodeId;
         this.ipAddress = ipAddress;
-        this.port = port;
+        this.tcpServerPort = tcpServerPort;
+        this.udpServerPort = udpServerPort;
     }
 
     /**
@@ -51,8 +53,12 @@ public class NodeProperties implements Serializable {
         return ipAddress;
     }
 
-    public int getPort() {
-        return port;
+    public int getTcpServerPort() {
+        return tcpServerPort;
+    }
+
+    public int getUdpServerPort() {
+        return udpServerPort;
     }
 
     public int getNodeId() {
@@ -98,7 +104,7 @@ public class NodeProperties implements Serializable {
         if (obj instanceof NodeProperties) {
             NodeProperties node = (NodeProperties) obj;
             boolean id = nodeId == node.getNodeId();
-            boolean port = getPort() == node.getPort();
+            boolean port = getTcpServerPort() == node.getTcpServerPort();
             boolean ip = getIpAddress().equals(node.getIpAddress());
             return id && port && ip;
         } else return false;

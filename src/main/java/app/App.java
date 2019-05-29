@@ -17,7 +17,7 @@ public class App {
     private static Scanner stringScanner = new Scanner(System.in);
     private static Scanner intScanner = new Scanner(System.in); // To avoid burning new line characters
     private static String knownIp;
-    private static int knownPort;
+    private static int knownTcpPort;
     private static final int RESOURCES_NUMBER = 5;
     private static boolean resourcesCreated;
 
@@ -31,9 +31,10 @@ public class App {
         } else {
             String[] parts = input.split(":");
             knownIp = parts[0];
-            knownPort = Integer.parseInt(parts[1]);
+            knownTcpPort = Integer.parseInt(parts[1]);
+
             node = new Node();
-            node.join(knownIp, knownPort);
+            node.join(knownIp, knownTcpPort);
         }
 
         // Workflow for demo

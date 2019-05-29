@@ -57,7 +57,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
             switch (msg.getMessage()) {
                 case "ping": {
                     String senderIp = msg.getProperties().getIpAddress();
-                    int senderPort = msg.getProperties().getPort();
+                    int senderPort = msg.getProperties().getTcpServerPort();
                     node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply", 0, 0, 0, null);
                 }
                 break;
@@ -71,7 +71,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
                 case "file_to_predecessor": {
                      TODO check if inconsistency w.r.t. predecessor trigger
                     if (sha1(msg.getFile().getName()) <= node.getPredecessor().getNodeId()) {
-                        node.sendResource(node.getPredecessor().getIpAddress(), node.getPredecessor().getPort(), "file_to_predecessor", msg.getFile());
+                        node.sendResource(node.getPredecessor().getIpAddress(), node.getPredecessor().getTcpServerPort(), "file_to_predecessor", msg.getFile());
                     }
                     node.saveFile(msg.getFile());
                 }
@@ -178,13 +178,13 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         if (!request.isTransfer())
             System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId());
         else
-            node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getPort(), new DistributeResourceRequest(null, request.getFile(), false));
+            node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getTcpServerPort(), new DistributeResourceRequest(null, request.getFile(), false));
     }
 
     @Override
     public void handle(CheckPredecessorRequest request) {
         String senderIp = request.getProperties().getIpAddress();
-        int senderPort = request.getProperties().getPort();
+        int senderPort = request.getProperties().getTcpServerPort();
         node.getForwarder().makeRequest( senderIp, senderPort, new CheckPredecessorReplyRequest(node.getProperties()));
     }
 
@@ -203,7 +203,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     public void handle(PredecessorRequest request) {
 
         String receiverIp = request.getProperties().getIpAddress();
-        int receiverPort = request.getProperties().getPort();
+        int receiverPort = request.getProperties().getTcpServerPort();
 
         //TODO Check if it is the right behaviour
         node.getForwarder().makeRequest( receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor(), node.getCustomizedSuccessors()));
