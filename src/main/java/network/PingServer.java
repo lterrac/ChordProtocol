@@ -42,7 +42,7 @@ public class PingServer implements Runnable {
 
     public void startServer() {
         // Processing loop.
-        while (true) {
+        while (true) { // TODO: fallo terminare (atomicBoolean)
             // Create a datagram packet to hold incoming UDP packet.
             DatagramPacket request = new DatagramPacket(new byte[1024], 1024);
 
@@ -54,7 +54,7 @@ public class PingServer implements Runnable {
             }
 
             // Print the received data.
-            printData(request);
+            //printData(request);
 
             // Send reply
             InetAddress clientHost = request.getAddress();
@@ -67,7 +67,7 @@ public class PingServer implements Runnable {
                 logger.log(Level.SEVERE, "Error while sending a reply");
             }
 
-            System.out.println("Reply sent.");
+          //  System.out.println("Reply sent.");
         }
     }
 

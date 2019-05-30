@@ -12,7 +12,7 @@ import java.util.logging.Logger;
 
 
 public class PingClient implements Runnable {
-    private static final int PING_PERIOD = 30000;
+    private static final int PING_PERIOD = 10000;
     private static final int PING_LIMIT = 7;
     private static final int TIME_LIMIT = 1000;
     private static final Logger logger = Logger.getLogger(PingClient.class.getName());
@@ -58,10 +58,13 @@ public class PingClient implements Runnable {
         alive = true;
         while (alive) {
             alive = ping();
-            try {
-                Thread.sleep(PING_PERIOD);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            // wait PING_PERIOD seconds
+            if(alive) {
+                try {
+                    Thread.sleep(PING_PERIOD);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
 
@@ -101,7 +104,7 @@ public class PingClient implements Runnable {
 
             try {
                 socket.receive(reply);
-                printData(reply);
+                //printData(reply);
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Missing packet");
                 missed++;

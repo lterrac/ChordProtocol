@@ -117,18 +117,31 @@ public class Node {
 
     public void setPredecessor(NodeProperties predecessor) {
 
-        deleteBackupFolderAndRecreate();
-
         this.predecessor = predecessor;
 
-        askPredecessorForBackupResources();
+        if (predecessor != null) {
+            deleteBackupFolderAndRecreate();
+            askPredecessorForBackupResources();
+        }
+        else {
+            //Move from backup to online
+            System.out.println("save file because the predecessor is null");
+            File folder = new File("./node" + this.properties.getNodeId() + "/backup");
+            File[] allFiles = folder.listFiles();
+            for (File file : allFiles) {
+                saveFile(file);
+                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(null, file, true));
+                file.delete();
+            }
+            //Ask predecessor for new resources
+
+        }
 
     }
     public void deleteBackupFolderAndRecreate(){
         File folder = new File("./node" + this.properties.getNodeId() + "/backup");
         File[] allFiles = folder.listFiles();
         for (File file : allFiles) {
-            System.out.println(file.getName()+" PORCACCIO CRISTO IN CROCE");
             file.delete();
         }
         boolean a = folder.delete();
@@ -527,6 +540,7 @@ public class Node {
     public void saveFile(File file) {
         FileOutputStream out = null;
         try {
+            System.out.println("saving " + file.getName());
             out = new FileOutputStream("./node" + properties.getNodeId() + "/online/" + file.getName());
         } catch (FileNotFoundException e) {
             e.printStackTrace();

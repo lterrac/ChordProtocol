@@ -139,6 +139,7 @@ public class Forwarder implements Runnable {
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
+            e.printStackTrace();
             System.out.println("Removed socket of node " + sha1(ip + ":" + port));
             lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()));
             socketMap.remove(ip + ":" + port);
