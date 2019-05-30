@@ -125,6 +125,18 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     }
 
     //search for the successor of the node received from the network
+
+
+    @Override
+    public void handle(AskPredecessorBackupResourcesRequest request) {
+        node.giveBackupResourcesToSuccessor(request.getProperties());
+    }
+
+    @Override
+    public void handle(TellSuccessorToDeleteBackupRequest request) {
+        node.deleteBackupFile(request.getFile());
+    }
+
     @Override
     public void handle(FindSuccessorRequest request) {
         node.findSuccessor(request.getProperties());
@@ -196,6 +208,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     @Override
     public void handle(TransferAfterLeaveRequest request) {
         node.saveFile(request.getFile());
+        node.getForwarder().makeRequest(node.successor().getIpAddress(),node.successor().getPort(),new DistributeResourceRequest(null,request.getFile(),true));
     }
 
     //Send the predecessor of the current node to the one that asked for it

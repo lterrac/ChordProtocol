@@ -3,6 +3,8 @@ package network;
 import network.requests.*;
 
 public interface RequestHandlerInterface {
+    void handle(TellSuccessorToDeleteBackupRequest request);
+    void handle(AskPredecessorBackupResourcesRequest request);
     void handle(FindSuccessorRequest request);
     void handle(DistributeResourceRequest request);
     void handle(AskSuccessorResourcesRequest request);

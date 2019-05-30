@@ -106,7 +106,31 @@ public class Node {
     }
 
     public void setPredecessor(NodeProperties predecessor) {
+
+        deleteBackupFolderAndRecreate();
+
         this.predecessor = predecessor;
+
+        askPredecessorForBackupResources();
+
+    }
+    public void deleteBackupFolderAndRecreate(){
+        File folder = new File("./node" + this.properties.getNodeId() + "/backup");
+        File[] allFiles = folder.listFiles();
+        for (File file : allFiles) {
+            System.out.println(file.getName()+" PORCACCIO CRISTO IN CROCE");
+            file.delete();
+        }
+        boolean a = folder.delete();
+
+        if (a)
+            System.out.println("Deleted backup");
+        else
+            System.out.println("Surprise motherfucker");
+
+        File f = new File("./node" + properties.getNodeId() + "/backup/backupFolderCreation");
+        if (!f.getParentFile().exists())
+            f.getParentFile().mkdirs();
     }
 
     public Forwarder getForwarder() {
@@ -139,7 +163,7 @@ public class Node {
      *
      * @return Node successor
      */
-    NodeProperties successor() {
+    public NodeProperties successor() {
         return fingers[0];
     }
 
@@ -207,6 +231,20 @@ public class Node {
         nodeSocketServer = new NodeSocketServer(this);
 
         new Thread(nodeSocketServer).start();
+
+        //check when the predecessor is set and then ask to it for the backups
+        //TODO SPERIAMO CHE VADA :)
+        new Thread(() -> {
+            while (!isPredecessorSet()) {
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("thread " + sha1(predecessor.getIpAddress() + ":" + predecessor.getPort()));
+            askPredecessorForBackupResources();
+        }).start();
     }
 
     //TODO Check what the fuck is wrong with this method
@@ -268,9 +306,15 @@ public class Node {
         for (File f : allFiles) {
             if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
                 forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getPort(), new DistributeResourceRequest(nodeProperties, f,false));
+                forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new TellSuccessorToDeleteBackupRequest(f));
                 f.delete();
             }
         }
+    }
+
+    public void askPredecessorForBackupResources(){
+        System.out.println("predecessor " + sha1(predecessor.getIpAddress() + ":" + predecessor.getPort()));
+        forwarder.makeRequest(predecessor.getIpAddress(),predecessor.getPort(),new AskPredecessorBackupResourcesRequest(this.getProperties()));
     }
 
     /**
@@ -594,8 +638,9 @@ public class Node {
         //called when a new node ask the successor for its resources, so it receives them and saves them
         else {*/
 
-        if (backup)
+        if (backup){
             saveFileBackup(file);
+        }
         else {
             saveFile(file);
             forwarder.makeRequest(successor().getIpAddress(), successor().getPort(), new DistributeResourceRequest(null, file, true));
@@ -717,6 +762,27 @@ public class Node {
         newList.addFirst(properties);
 
         return newList;
+    }
+
+    public void giveBackupResourcesToSuccessor(NodeProperties properties) {
+        File folder = new File("./node" + this.properties.getNodeId() + "/online");
+        File[] allFiles = folder.listFiles();
+
+        // TODO: after the switch to the Visitor pattern, send them as a list
+        for (File file : allFiles) {
+            forwarder.makeRequest(properties.getIpAddress(), properties.getPort(), new DistributeResourceRequest(null,file,true));
+        }
+    }
+
+    public void deleteBackupFile(File f) {
+        File folder = new File("./node" + this.properties.getNodeId() + "/backup");
+        File[] allFiles = folder.listFiles();
+
+        // TODO: after the switch to the Visitor pattern, send them as a list
+        for (File file : allFiles) {
+            if (f.getName().equals(file.getName()))
+                file.delete();
+        }
     }
 }
 
