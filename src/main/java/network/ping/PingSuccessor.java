@@ -2,14 +2,28 @@ package network.ping;
 
 import model.Node;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+
 public class PingSuccessor extends PingClient {
 
-    public PingSuccessor(Node node, String ip, int port) {
-        super(node, ip, port);
+    public PingSuccessor(Node node, String ip, int port, int targetNodeId) {
+        super(node, ip, port, targetNodeId);
     }
 
     @Override
     void crashHandling() {
         node.replaceSuccessor();
+    }
+
+    @Override
+    protected void printMissingPackets(int missed) {
+        System.out.println("\t\t missing successor packets " + missed + "from node " + targetNodeId);
+    }
+
+    @Override
+    protected void printAMiss(Logger logger) {
+        logger.log(Level.SEVERE, "Missing successor packet from node " + targetNodeId);
     }
 }

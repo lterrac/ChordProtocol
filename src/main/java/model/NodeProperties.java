@@ -18,13 +18,15 @@ public class NodeProperties implements Serializable {
     private final int nodeId;
     private String ipAddress;
     private int tcpServerPort;
-    private int udpServerPort;
+    private int udpSuccessorServerPort;
+    private int udpPredecessorServerPort;
 
-    public NodeProperties(int nodeId, String ipAddress, int tcpServerPort, int udpServerPort) {
+    public NodeProperties(int nodeId, String ipAddress, int tcpServerPort, int udpSuccessorServerPort, int udpPredecessorServerPort) {
         this.nodeId = nodeId;
         this.ipAddress = ipAddress;
         this.tcpServerPort = tcpServerPort;
-        this.udpServerPort = udpServerPort;
+        this.udpSuccessorServerPort = udpSuccessorServerPort;
+        this.udpPredecessorServerPort = udpPredecessorServerPort;
     }
 
     /**
@@ -58,8 +60,12 @@ public class NodeProperties implements Serializable {
         return tcpServerPort;
     }
 
-    public int getUdpServerPort() {
-        return udpServerPort;
+    public int getUdpSuccessorServerPort() {
+        return udpSuccessorServerPort;
+    }
+
+    public int getUdpPredecessorServerPort() {
+        return udpPredecessorServerPort;
     }
 
     public int getNodeId() {

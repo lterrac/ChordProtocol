@@ -11,22 +11,25 @@ import java.util.logging.Logger;
 
 public abstract class PingClient implements Runnable {
 
-    private static final int PING_PERIOD = 10000;
-    private static final int PING_LIMIT = 7;
-    private static final int TIME_LIMIT = 1000;
+    private static final int PING_PERIOD = 4000;
+    private static final int PING_LIMIT = 5;
+    private static final int TIME_LIMIT = 700;
     private static final Logger logger = Logger.getLogger(PingClient.class.getName());
+    int targetNodeId;
     private DatagramSocket socket;
-    private String successorIp;
-    private int successorPort;
+    String targetIp;
+    int targetPort;
     Node node;
     private boolean alive;
     private AtomicBoolean terminated;
 
     // Create a datagram socket for receiving and sending UDP packets
-    public PingClient(Node node, String ip, int port) {
-        this.successorIp = ip;
-        this.successorPort = port;
+    public PingClient(Node node, String ip, int port, int targetNodeId) {
+        this.targetIp = ip;
+        this.targetPort = port;
         this.node = node;
+        this.targetNodeId = targetNodeId;
+
         terminated = new AtomicBoolean(false);
         boolean createdDatagramSocket = false;
 
@@ -37,8 +40,8 @@ public abstract class PingClient implements Runnable {
                 System.out.println("Ip address: " + InetAddress.getLocalHost().getHostAddress());
                 System.out.println("Port: " + socket.getLocalPort());
                 System.out.println("Pinging towards: ");
-                System.out.println("Ip address: " + successorIp);
-                System.out.println("Port: " + successorPort);
+                System.out.println("Ip address: " + targetIp);
+                System.out.println("Port: " + targetPort);
 */
                 createdDatagramSocket = true;
             } catch (SocketException e) {
@@ -67,7 +70,7 @@ public abstract class PingClient implements Runnable {
 
     public void startClient() {
         alive = true;
-        while (alive || terminated.get()) {
+        while (alive && !terminated.get()) {
             alive = ping();
             // wait PING_PERIOD seconds
             if(alive) {
@@ -97,7 +100,7 @@ public abstract class PingClient implements Runnable {
             // create the request
             DatagramPacket request = null;
             try {
-                request = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(successorIp), successorPort);
+                request = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(targetIp), targetPort);
             } catch (UnknownHostException e) {
                 logger.log(Level.SEVERE, "Unknown host exception");
                 e.printStackTrace();
@@ -121,7 +124,7 @@ public abstract class PingClient implements Runnable {
                 logger.log(Level.SEVERE, "The packet " + i + " didn't receive a reply in time.");
                 missed++;
             } catch (IOException e) {
-                logger.log(Level.SEVERE, "Missing packet");
+                printAMiss(logger);
                 missed++;
             }
 
@@ -133,11 +136,15 @@ public abstract class PingClient implements Runnable {
             }
         }
 
-        System.out.println("\t\t missing packets " + missed);
+        printMissingPackets(missed);
 
         // simple check to detect a the crash of a node
         return missed != PING_LIMIT;
     }
+
+    protected abstract void printMissingPackets(int missed);
+
+    protected abstract void printAMiss(Logger logger);
 }
 
 

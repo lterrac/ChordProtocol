@@ -2,6 +2,7 @@ package model;
 
 import network.Forwarder;
 import network.NodeSocketServer;
+import network.ping.PingPredecessor;
 import network.ping.PingServer;
 import network.ping.PingSuccessor;
 import network.requests.*;
@@ -78,8 +79,10 @@ public class Node {
      * UDP ping implementation
      */
 
-    private PingServer pingServer;
+    private PingServer pingSuccessorServer;
+    private PingServer pingPredecessorServer;
     private PingSuccessor pingSuccessor;
+    private PingPredecessor pingPredecessor;
 
     /**
      * Useful to save the index of the finger table to which to apply the fix_finger algorithm
@@ -89,7 +92,7 @@ public class Node {
     public Node() {
         n_fix = -1;
         successors = new ArrayDeque<>(KEY_SIZE);
-        checkPredecessor = new CheckPredecessor(this);
+        // checkPredecessor = new CheckPredecessor(this);
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
     }
@@ -111,6 +114,24 @@ public class Node {
     public void setPredecessor(NodeProperties predecessor) {
 
         this.predecessor = predecessor;
+
+        if (pingPredecessor != null) {
+            pingPredecessor.terminate();
+            logger.log(Level.INFO, "stopped pingPredecessor client");
+        }
+
+
+        if (predecessor != null) {
+            //create a new one only if I am not the last node left in the network
+            if (predecessor.getNodeId() != properties.getNodeId()) {
+                logger.log(Level.INFO, "A node crashed. I'm building another pingPredecessor client for predecessor " + predecessor.getNodeId());
+                pingPredecessor = new PingPredecessor(this, predecessor.getIpAddress(), predecessor.getUdpPredecessorServerPort(), predecessor.getNodeId());
+                new Thread(pingPredecessor).start();
+            }
+        } else
+            pingPredecessor = null;
+
+
 
         /*
         if (predecessor != null) {
@@ -153,22 +174,22 @@ public class Node {
      * Replace the successor after having detected that has crashed. The new successor will be the next in the successors list
      */
     public void replaceSuccessor() {
-        successors.removeFirst();
 
         synchronized (fingers[0]) {
-            fingers[0] = successors.getFirst();
+            fingers[0] = successors.removeFirst();
         }
 
         //stop the old pinger if exists
         if (pingSuccessor != null) {
             pingSuccessor.terminate();
-            System.out.println("Closing pinger");
+            logger.log(Level.INFO, "stopped pingSuccessor client");
         }
 
         //create a new one only if I am not the last node left in the network
         if (successor().getNodeId() != properties.getNodeId()) {
-            logger.log(Level.INFO, "A node crashed. I'm building another ping client");
-            pingSuccessor = new PingSuccessor(this, successor().getIpAddress(), successor().getUdpServerPort());
+            logger.log(Level.INFO, "A node crashed. I'm building another pingSuccessor client for successor " + successor().getNodeId());
+            NodeProperties successor = successor();
+            pingSuccessor = new PingSuccessor(this, successor.getIpAddress(), successor.getUdpSuccessorServerPort(), successor.getNodeId());
             new Thread(pingSuccessor).start();
         }
     }
@@ -227,13 +248,15 @@ public class Node {
         }
 
         if (pingSuccessor != null) {
-            System.out.println("Closing pinger");
             pingSuccessor.terminate();
+            logger.log(Level.INFO, "stopped pingSuccessor client");
         }
 
         // restart the ping client every time the successor changes
         if (successor().getNodeId() != this.properties.getNodeId()) {
-            pingSuccessor = new PingSuccessor(this, successor().getIpAddress(), successor().getUdpServerPort());
+            logger.log(Level.INFO, "Successor changed. I'm building another pingSuccessor client for successor " + successor().getNodeId());
+            NodeProperties successor = successor();
+            pingSuccessor = new PingSuccessor(this, successor.getIpAddress(), successor.getUdpSuccessorServerPort(), successor.getNodeId());
             new Thread(pingSuccessor).start();
         }
 
@@ -387,10 +410,13 @@ public class Node {
         serverSocket = createServerSocket();
         int tcpServerPort = serverSocket.getLocalPort();
         String ipAddress = getCurrentIp();
-        pingServer = new PingServer();
-        new Thread(pingServer).start();
-        int udpServerPort = pingServer.getPort();
-        initializeNode(ipAddress, tcpServerPort, udpServerPort);
+        pingSuccessorServer = new PingServer();
+        pingPredecessorServer = new PingServer();
+        new Thread(pingSuccessorServer).start();
+        new Thread(pingPredecessorServer).start();
+        int udpSuccessorServerPort = pingSuccessorServer.getPort();
+        int udpPredecessorPort = pingPredecessorServer.getPort();
+        initializeNode(ipAddress, tcpServerPort, udpSuccessorServerPort, udpSuccessorServerPort);
         forwarder = new Forwarder(properties.getNodeId());
         foldersCreation();
     }
@@ -419,8 +445,8 @@ public class Node {
      * @param ipAddress     IP of the node
      * @param tcpServerPort Port on which the node is listening
      */
-    private void initializeNode(String ipAddress, int tcpServerPort, int udpServerPort) {
-        this.properties = new NodeProperties(sha1(ipAddress + ":" + tcpServerPort), ipAddress, tcpServerPort, udpServerPort);
+    private void initializeNode(String ipAddress, int tcpServerPort, int udpSuccessorServerPort, int udpPredecessorServerPort) {
+        this.properties = new NodeProperties(sha1(ipAddress + ":" + tcpServerPort), ipAddress, tcpServerPort, udpSuccessorServerPort, udpPredecessorServerPort);
         setSuccessor(this.properties);
         this.predecessor = null;
     }
@@ -437,10 +463,10 @@ public class Node {
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
         stabilizeThread = Executors.newSingleThreadScheduledExecutor();
         forwarderThread = Executors.newSingleThreadScheduledExecutor();
-        checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
+        //  checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
 
         forwarderThread.scheduleAtFixedRate(forwarder, 1, CHECK_SOCKET_PERIOD, TimeUnit.MILLISECONDS);
-        checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 800, CHECK_PREDECESSOR_SCHEDULE, TimeUnit.MILLISECONDS);
+        //       checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 800, CHECK_PREDECESSOR_SCHEDULE, TimeUnit.MILLISECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 200, FIX_PERIOD, TimeUnit.MILLISECONDS);
         stabilizeThread.scheduleAtFixedRate(stabilize, 400, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
     }
@@ -701,8 +727,8 @@ public class Node {
         if (pingSuccessor != null)
             pingSuccessor.terminate();
 
-        if (pingServer != null)
-            pingServer.terminate();
+        if (pingSuccessorServer != null)
+            pingSuccessorServer.terminate();
     }
 
     public void printServerCoordinates() {
