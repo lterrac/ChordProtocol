@@ -18,7 +18,7 @@ public class CheckPredecessorTimer extends TimerTask {
 
     @Override
     public void run() {
-        if (!stop.get()) {
+        if (isNotStop()) {
             System.out.println("Setting predecessor to null");
             node.setPredecessor(null);
         }
@@ -26,5 +26,9 @@ public class CheckPredecessorTimer extends TimerTask {
 
     void stop() {
         stop.set(true);
+    }
+
+    boolean isNotStop() {
+        return !stop.get();
     }
 }

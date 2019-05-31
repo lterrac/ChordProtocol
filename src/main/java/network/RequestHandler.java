@@ -202,6 +202,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(CheckPredecessorReplyRequest request) {
+        System.out.println("cp arrived");
         node.cancelCheckPredecessorTimer();
     }
 

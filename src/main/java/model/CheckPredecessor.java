@@ -31,7 +31,7 @@ public class CheckPredecessor implements Runnable {
     }
 
     void cancelTimer() {
-        if (task != null)
+        if (task.isNotStop())
             task.stop();
     }
 }

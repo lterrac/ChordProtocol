@@ -140,22 +140,22 @@ public class Forwarder implements Runnable {
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
             if (lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey())))
-                System.out.println("Removed lastMessage timestamp t of node " + sha1(ip + ":" + port));
-            else
-                System.out.println("Already removed from lastMessage");
+                //              System.out.println("Removed lastMessage timestamp t of node " + sha1(ip + ":" + port));
+                //       else
+                //            System.out.println("Already removed from lastMessage");
 
-            if (socketMap.remove(ip + ":" + port) != null) {
-                System.out.println("Removed socket of node " + sha1(ip + ":" + port));
-                clientSocket.close();
-            } else
-                System.out.println("Already removed the socket");
-
-
+                if (socketMap.remove(ip + ":" + port) != null) {
+                    //          System.out.println("Removed socket of node " + sha1(ip + ":" + port));
+                    clientSocket.close();
+                    //     } else
+                    //        System.out.println("Already removed the socket");
+                }
         }
     }
 
     /**
      * Writes a {@link network.requests.Request} into the output stream of {@link #clientSocket}.
+     *
      * @param request Request to send
      */
     public void request(Request request) throws IOException {
@@ -171,7 +171,7 @@ public class Forwarder implements Runnable {
     /**
      * Update last time a message is sent to a specific client
      *
-     * @param ip Ip of the node
+     * @param ip   Ip of the node
      * @param port Port of the node
      */
     private void updateLastMessage(String ip, int port) {
@@ -184,7 +184,7 @@ public class Forwarder implements Runnable {
     /**
      * Add a new node to the active socket to check its timestamp
      *
-     * @param ip Ip of the node
+     * @param ip   Ip of the node
      * @param port Port of the node
      */
     private void addToLastMessage(String ip, int port) {

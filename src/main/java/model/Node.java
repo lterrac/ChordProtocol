@@ -2,8 +2,8 @@ package model;
 
 import network.Forwarder;
 import network.NodeSocketServer;
-import network.PingClient;
-import network.PingServer;
+import network.ping.PingServer;
+import network.ping.PingSuccessor;
 import network.requests.*;
 
 import java.io.File;
@@ -79,7 +79,7 @@ public class Node {
      */
 
     private PingServer pingServer;
-    private PingClient pingClient;
+    private PingSuccessor pingSuccessor;
 
     /**
      * Useful to save the index of the finger table to which to apply the fix_finger algorithm
@@ -112,6 +112,7 @@ public class Node {
 
         this.predecessor = predecessor;
 
+        /*
         if (predecessor != null) {
             deleteBackupFolderAndRecreate();
             askPredecessorForBackupResources();
@@ -128,8 +129,8 @@ public class Node {
                 file.delete();
             }
             //Ask predecessor for new resources
-
         }
+         */
 
     }
 
@@ -158,14 +159,17 @@ public class Node {
             fingers[0] = successors.getFirst();
         }
 
-        if (successor().getNodeId() != this.properties.getNodeId()) {
+        //stop the old pinger if exists
+        if (pingSuccessor != null) {
+            pingSuccessor.terminate();
+            System.out.println("Closing pinger");
+        }
+
+        //create a new one only if I am not the last node left in the network
+        if (successor().getNodeId() != properties.getNodeId()) {
             logger.log(Level.INFO, "A node crashed. I'm building another ping client");
-            pingClient = new PingClient(this, successor().getIpAddress(), successor().getUdpServerPort());
-            new Thread(pingClient).start();
-        } else {
-            if (pingClient != null) {
-                pingClient.stop();
-            }
+            pingSuccessor = new PingSuccessor(this, successor().getIpAddress(), successor().getUdpServerPort());
+            new Thread(pingSuccessor).start();
         }
     }
 
@@ -222,13 +226,15 @@ public class Node {
             this.fingers[0] = node;
         }
 
+        if (pingSuccessor != null) {
+            System.out.println("Closing pinger");
+            pingSuccessor.terminate();
+        }
+
         // restart the ping client every time the successor changes
         if (successor().getNodeId() != this.properties.getNodeId()) {
-            if (pingClient != null) {
-                pingClient.stop(); // TODO: non sono sicuro che lo fermi davvero. C'è un ciclo infinito di mezzo
-            }
-            pingClient = new PingClient(this, successor().getIpAddress(), successor().getUdpServerPort());
-            new Thread(pingClient).start();
+            pingSuccessor = new PingSuccessor(this, successor().getIpAddress(), successor().getUdpServerPort());
+            new Thread(pingSuccessor).start();
         }
 
     }
@@ -316,7 +322,7 @@ public class Node {
      * It moves them from the folder "/offline" to "/online"
      */
     public void publishResources() {
-
+/*
         //case in which you're the only node in the network, so your files are moved from the offline folder to the online one;
         if (isNodeAlone()) {
             File folder = new File("./node" + properties.getNodeId() + "/offline");
@@ -336,7 +342,7 @@ public class Node {
             }
         }
         System.out.println("You correctly published your resources! Some of them could have been forwarded to other nodes, while some could still be of your property placed in your online folder");
-
+*/
     }
 
     /**
@@ -354,6 +360,7 @@ public class Node {
      * @param nodeProperties predecessor of the node
      */
     public void giveResourcesToPredecessor(NodeProperties nodeProperties) {
+/*
         File folder = new File("./node" + properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
         for (File f : allFiles) {
@@ -363,6 +370,7 @@ public class Node {
                 f.delete();
             }
         }
+ */
     }
 
     public void askPredecessorForBackupResources(){
@@ -426,10 +434,10 @@ public class Node {
      * - Forwarder (check for unused sockets)
      */
     private void startThreads() {
-        checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
         stabilizeThread = Executors.newSingleThreadScheduledExecutor();
         forwarderThread = Executors.newSingleThreadScheduledExecutor();
+        checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
 
         forwarderThread.scheduleAtFixedRate(forwarder, 1, CHECK_SOCKET_PERIOD, TimeUnit.MILLISECONDS);
         checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 800, CHECK_PREDECESSOR_SCHEDULE, TimeUnit.MILLISECONDS);
@@ -613,23 +621,26 @@ public class Node {
      * Send the files to be assigned to other nodes
      */
     public void distributeResource(File file, boolean backup) {
-        if (backup){
+ /*       if (backup){
             saveFile(file, "backup");
         }
         else {
             saveFile(file, "online");
             forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
         }
+  */
     }
 
     public void giveBackupResourcesToSuccessor(NodeProperties properties) {
-        File folder = new File("./node" + this.properties.getNodeId() + "/online");
+ /*       File folder = new File("./node" + this.properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
 
         // TODO: after the switch to the Visitor pattern, send them as a list
         for (File file : allFiles) {
             forwarder.makeRequest(properties.getIpAddress(), properties.getTcpServerPort(), new DistributeResourceRequest(file, true));
         }
+
+  */
     }
 
     public void deleteBackupFile(File f) {
@@ -686,6 +697,12 @@ public class Node {
         forwarder.stop();
         nodeSocketServer.close();
         forwarder.stop();
+
+        if (pingSuccessor != null)
+            pingSuccessor.terminate();
+
+        if (pingServer != null)
+            pingServer.terminate();
     }
 
     public void printServerCoordinates() {

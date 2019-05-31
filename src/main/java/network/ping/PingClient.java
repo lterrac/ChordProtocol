@@ -1,17 +1,16 @@
-package network;
+package network.ping;
 
 import model.Node;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 
-public class PingClient implements Runnable {
+public abstract class PingClient implements Runnable {
+
     private static final int PING_PERIOD = 10000;
     private static final int PING_LIMIT = 7;
     private static final int TIME_LIMIT = 1000;
@@ -19,44 +18,56 @@ public class PingClient implements Runnable {
     private DatagramSocket socket;
     private String successorIp;
     private int successorPort;
-    private Node node;
+    Node node;
     private boolean alive;
+    private AtomicBoolean terminated;
 
     // Create a datagram socket for receiving and sending UDP packets
     public PingClient(Node node, String ip, int port) {
         this.successorIp = ip;
         this.successorPort = port;
         this.node = node;
+        terminated = new AtomicBoolean(false);
+        boolean createdDatagramSocket = false;
 
-        boolean stop = false;
-
-        while (!stop) {
+        while (!createdDatagramSocket) {
             try {
                 socket = new DatagramSocket();
-                System.out.println("Datagram client is up on:");
+        /*        System.out.println("Datagram client is up on:");
                 System.out.println("Ip address: " + InetAddress.getLocalHost().getHostAddress());
                 System.out.println("Port: " + socket.getLocalPort());
                 System.out.println("Pinging towards: ");
                 System.out.println("Ip address: " + successorIp);
                 System.out.println("Port: " + successorPort);
-
-                stop = true;
+*/
+                createdDatagramSocket = true;
             } catch (SocketException e) {
                 logger.log(Level.WARNING, "Failed to open the datagram socket client. I'll retry in a second!");
+
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e1) {
                     e1.printStackTrace();
                 }
-            } catch (UnknownHostException e) {
+            }/* catch (UnknownHostException e) {
                 logger.log(Level.SEVERE, "Unknown host exception");
-            }
+            }*/
         }
     }
 
+    @Override
+    public void run() {
+        startClient();
+    }
+
+    public void terminate() {
+        terminated.set(true);
+    }
+
+
     public void startClient() {
         alive = true;
-        while (alive) {
+        while (alive || terminated.get()) {
             alive = ping();
             // wait PING_PERIOD seconds
             if(alive) {
@@ -69,19 +80,24 @@ public class PingClient implements Runnable {
         }
 
         // the node has crashed
-        node.replaceSuccessor();
+        if (!terminated.get())
+            crashHandling();
+
+        socket.close();
     }
+
+    abstract void crashHandling();
 
     public boolean ping() {
         int missed = 0;
         for (int i = 0; i < PING_LIMIT; i++) {
-            long SendTime = System.currentTimeMillis();
-            String Message = "Ping " + i + " " + SendTime + "\n";
+            long sendTime = System.currentTimeMillis();
+            String message = "Ping " + i + " " + sendTime + "\n";
 
             // create the request
             DatagramPacket request = null;
             try {
-                request = new DatagramPacket(Message.getBytes(), Message.length(), InetAddress.getByName(successorIp), successorPort);
+                request = new DatagramPacket(message.getBytes(), message.length(), InetAddress.getByName(successorIp), successorPort);
             } catch (UnknownHostException e) {
                 logger.log(Level.SEVERE, "Unknown host exception");
                 e.printStackTrace();
@@ -98,13 +114,12 @@ public class PingClient implements Runnable {
 
             try {
                 socket.setSoTimeout(TIME_LIMIT);
+
+                socket.receive(reply);
+
             } catch (SocketException e) {
                 logger.log(Level.SEVERE, "The packet " + i + " didn't receive a reply in time.");
-            }
-
-            try {
-                socket.receive(reply);
-                //printData(reply);
+                missed++;
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Missing packet");
                 missed++;
@@ -118,10 +133,15 @@ public class PingClient implements Runnable {
             }
         }
 
+        System.out.println("\t\t missing packets " + missed);
+
         // simple check to detect a the crash of a node
         return missed != PING_LIMIT;
     }
+}
 
+
+    /*
     // Print ping data to the standard output stream. // TODO: just for testing
     private void printData(DatagramPacket request) {
         // Obtain references to the packet's array of bytes.
@@ -150,14 +170,4 @@ public class PingClient implements Runnable {
                         request.getAddress().getHostAddress() +
                         ": " +
                         line);
-    }
-
-    @Override
-    public void run() {
-        startClient();
-    }
-
-    public void stop() {
-        alive = false;
-    }
-}
+    } */

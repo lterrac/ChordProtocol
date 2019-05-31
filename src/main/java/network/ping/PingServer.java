@@ -1,10 +1,8 @@
-package network;
+package network.ping;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,11 +12,13 @@ import java.util.logging.Logger;
 public class PingServer implements Runnable {
     private static final Logger logger = Logger.getLogger(PingServer.class.getName());
     private DatagramSocket socket;
+    private AtomicBoolean terminated;
 
     // Create a datagram socket for receiving and sending UDP packets
     public PingServer() {
-        boolean stop = false;
-        while (!stop) {
+        terminated = new AtomicBoolean(false);
+        boolean createdDatagramSocket = false;
+        while (!createdDatagramSocket) {
             try {
                 socket = new DatagramSocket();
 
@@ -26,7 +26,7 @@ public class PingServer implements Runnable {
                 System.out.println("Ip address: " + InetAddress.getLocalHost().getHostAddress());
                 System.out.println("Port: " + socket.getLocalPort());
 
-                stop = true;
+                createdDatagramSocket = true;
             } catch (SocketException e) {
                 logger.log(Level.WARNING, "Failed to open the datagram socket server. I'll retry in a second!");
                 try {
@@ -42,7 +42,7 @@ public class PingServer implements Runnable {
 
     public void startServer() {
         // Processing loop.
-        while (true) { // TODO: fallo terminare (atomicBoolean)
+        while (!terminated.get()) {
             // Create a datagram packet to hold incoming UDP packet.
             DatagramPacket request = new DatagramPacket(new byte[1024], 1024);
 
@@ -69,8 +69,26 @@ public class PingServer implements Runnable {
 
           //  System.out.println("Reply sent.");
         }
+        socket.close();
     }
 
+    @Override
+    public void run() {
+        startServer();
+    }
+
+    public int getPort() {
+        return socket.getLocalPort();
+    }
+
+    public void terminate() {
+        terminated.set(true);
+    }
+}
+
+
+
+/*
     // Print ping data to the standard output stream. // TODO: just for testing
     private void printData(DatagramPacket request) {
         // Obtain references to the packet's array of bytes.
@@ -101,12 +119,5 @@ public class PingServer implements Runnable {
                         line);
     }
 
-    @Override
-    public void run() {
-        startServer();
-    }
 
-    public int getPort() {
-        return socket.getLocalPort();
-    }
-}
+ */
