@@ -45,8 +45,8 @@ public class Forwarder implements Runnable {
         lastMessage = new HashMap<>();
 
         if (debug) {
-            Handler consoleHandler = null;
-            Handler fileHandler = null;
+            Handler consoleHandler;
+            Handler fileHandler;
             try {
                 //Creating consoleHandler and fileHandler
                 consoleHandler = new ConsoleHandler();
@@ -139,11 +139,17 @@ public class Forwarder implements Runnable {
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
-            e.printStackTrace();
-            System.out.println("Removed socket of node " + sha1(ip + ":" + port));
-            lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()));
-            socketMap.remove(ip + ":" + port);
-            clientSocket.close();
+            if (lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey())))
+                System.out.println("Removed lastMessage timestamp t of node " + sha1(ip + ":" + port));
+            else
+                System.out.println("Already removed from lastMessage");
+
+            if (socketMap.remove(ip + ":" + port) != null) {
+                System.out.println("Removed socket of node " + sha1(ip + ":" + port));
+                clientSocket.close();
+            } else
+                System.out.println("Already removed the socket");
+
 
         }
     }

@@ -2,7 +2,7 @@ package model;
 
 import java.util.Timer;
 
-import static model.NodeProperties.CHECK_PERIOD;
+import static model.NodeProperties.CHECK_PREDECESSOR_TIMEOUT;
 
 /**
  * Check if predecessor has failed
@@ -24,7 +24,7 @@ public class CheckPredecessor implements Runnable {
         if (node.isPredecessorSet()) {
             // Create the task and set the timer
             task = new CheckPredecessorTimer(node);
-            (new Timer()).schedule(task, CHECK_PERIOD);
+            (new Timer()).schedule(task, CHECK_PREDECESSOR_TIMEOUT);
 
             node.checkPredecessor();
         }

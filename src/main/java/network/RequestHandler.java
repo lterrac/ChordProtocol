@@ -1,6 +1,6 @@
 package network;
 
-import model.*;
+import model.Node;
 import network.requests.*;
 
 import java.io.EOFException;
@@ -144,7 +144,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(DistributeResourceRequest request) {
-        node.distributeResource(request.getProperties(),request.getFile(), request.isBackup());
+        node.distributeResource(request.getFile(), request.isBackup());
     }
 
     @Override
@@ -190,7 +190,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         if (!request.isTransfer())
             System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId());
         else
-            node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getTcpServerPort(), new DistributeResourceRequest(null, request.getFile(), false));
+            node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), false));
     }
 
     @Override
@@ -207,8 +207,8 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(TransferAfterLeaveRequest request) {
-        node.saveFile(request.getFile());
-        node.getForwarder().makeRequest(node.successor().getIpAddress(),node.successor().getTcpServerPort(),new DistributeResourceRequest(null,request.getFile(),true));
+        node.saveFile(request.getFile(), "online");
+        node.getForwarder().makeRequest(node.successor().getIpAddress(), node.successor().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), true));
     }
 
     //Send the predecessor of the current node to the one that asked for it
@@ -226,7 +226,6 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     //todo Check if a synchronized block is necessary
     @Override
     public void handle(PredecessorReplyRequest request) {
-
         node.finalizeStabilize(request.getProperties(), request.getSuccessors());
     }
 
