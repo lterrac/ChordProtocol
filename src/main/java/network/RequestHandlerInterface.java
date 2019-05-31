@@ -15,8 +15,6 @@ public interface RequestHandlerInterface {
     void handle(FixFingerReplyRequest request);
     void handle(LookupRequest request);
     void handle(LookupReplyRequest request);
-    void handle(CheckPredecessorRequest request);
-    void handle(CheckPredecessorReplyRequest request);
     void handle(TransferAfterLeaveRequest request);
     void handle(PredecessorRequest request);
     void handle(PredecessorReplyRequest request);

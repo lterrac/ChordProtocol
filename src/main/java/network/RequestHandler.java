@@ -194,19 +194,6 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     }
 
     @Override
-    public void handle(CheckPredecessorRequest request) {
-        String senderIp = request.getProperties().getIpAddress();
-        int senderPort = request.getProperties().getTcpServerPort();
-        node.getForwarder().makeRequest( senderIp, senderPort, new CheckPredecessorReplyRequest(node.getProperties()));
-    }
-
-    @Override
-    public void handle(CheckPredecessorReplyRequest request) {
-        System.out.println("cp arrived");
-        node.cancelCheckPredecessorTimer();
-    }
-
-    @Override
     public void handle(TransferAfterLeaveRequest request) {
         node.saveFile(request.getFile(), "online");
         node.getForwarder().makeRequest(node.successor().getIpAddress(), node.successor().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), true));

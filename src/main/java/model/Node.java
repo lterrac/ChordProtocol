@@ -56,7 +56,6 @@ public class Node {
     /**
      * Scheduled executor to run threads at regular time intervals
      */
-    private ScheduledExecutorService checkPredecessorThread;
     private ScheduledExecutorService fixFingersThread;
     private ScheduledExecutorService stabilizeThread;
     private ScheduledExecutorService forwarderThread;
@@ -64,7 +63,6 @@ public class Node {
     /**
      * Classes containing the threads code
      */
-    private CheckPredecessor checkPredecessor;
     private FixFingers fixFingers;
     private Stabilize stabilize;
     private NodeProperties predecessor;
@@ -92,7 +90,6 @@ public class Node {
     public Node() {
         n_fix = -1;
         successors = new ArrayDeque<>(KEY_SIZE);
-        // checkPredecessor = new CheckPredecessor(this);
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
     }
@@ -127,19 +124,13 @@ public class Node {
                 logger.log(Level.INFO, "A node crashed. I'm building another pingPredecessor client for predecessor " + predecessor.getNodeId());
                 pingPredecessor = new PingPredecessor(this, predecessor.getIpAddress(), predecessor.getUdpPredecessorServerPort(), predecessor.getNodeId());
                 new Thread(pingPredecessor).start();
+
+                deleteBackupFolderAndRecreate();
+                askPredecessorForBackupResources();
             }
-        } else
+        } else {
             pingPredecessor = null;
 
-
-
-        /*
-        if (predecessor != null) {
-            deleteBackupFolderAndRecreate();
-            askPredecessorForBackupResources();
-        }
-        else {
-            //TODO refactor this code
             //Move from backup to online
             System.out.println("save file because the predecessor is null");
             File folder = new File("./node" + this.properties.getNodeId() + "/backup");
@@ -149,10 +140,7 @@ public class Node {
                 forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
                 file.delete();
             }
-            //Ask predecessor for new resources
         }
-         */
-
     }
 
     void updateSuccessors(Deque<NodeProperties> sList) {
@@ -345,7 +333,6 @@ public class Node {
      * It moves them from the folder "/offline" to "/online"
      */
     public void publishResources() {
-/*
         //case in which you're the only node in the network, so your files are moved from the offline folder to the online one;
         if (isNodeAlone()) {
             File folder = new File("./node" + properties.getNodeId() + "/offline");
@@ -365,7 +352,6 @@ public class Node {
             }
         }
         System.out.println("You correctly published your resources! Some of them could have been forwarded to other nodes, while some could still be of your property placed in your online folder");
-*/
     }
 
     /**
@@ -383,7 +369,6 @@ public class Node {
      * @param nodeProperties predecessor of the node
      */
     public void giveResourcesToPredecessor(NodeProperties nodeProperties) {
-/*
         File folder = new File("./node" + properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
         for (File f : allFiles) {
@@ -393,7 +378,6 @@ public class Node {
                 f.delete();
             }
         }
- */
     }
 
     public void askPredecessorForBackupResources(){
@@ -416,7 +400,7 @@ public class Node {
         new Thread(pingPredecessorServer).start();
         int udpSuccessorServerPort = pingSuccessorServer.getPort();
         int udpPredecessorPort = pingPredecessorServer.getPort();
-        initializeNode(ipAddress, tcpServerPort, udpSuccessorServerPort, udpSuccessorServerPort);
+        initializeNode(ipAddress, tcpServerPort, udpSuccessorServerPort, udpPredecessorPort);
         forwarder = new Forwarder(properties.getNodeId());
         foldersCreation();
     }
@@ -463,10 +447,8 @@ public class Node {
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
         stabilizeThread = Executors.newSingleThreadScheduledExecutor();
         forwarderThread = Executors.newSingleThreadScheduledExecutor();
-        //  checkPredecessorThread = Executors.newSingleThreadScheduledExecutor();
 
         forwarderThread.scheduleAtFixedRate(forwarder, 1, CHECK_SOCKET_PERIOD, TimeUnit.MILLISECONDS);
-        //       checkPredecessorThread.scheduleAtFixedRate(checkPredecessor, 800, CHECK_PREDECESSOR_SCHEDULE, TimeUnit.MILLISECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 200, FIX_PERIOD, TimeUnit.MILLISECONDS);
         stabilizeThread.scheduleAtFixedRate(stabilize, 400, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
     }
@@ -605,13 +587,6 @@ public class Node {
     }
 
     /**
-     * Cancel the timer that has been set before sending the request to check if the predecessor is still alive
-     */
-    public void cancelCheckPredecessorTimer() {
-        checkPredecessor.cancelTimer();
-    }
-
-    /**
      * Update and return the n_fix variable to properly run the fix_finger algorithm
      *
      * @return the index of the finger table to be used during the fix_finger algorithm
@@ -637,36 +612,26 @@ public class Node {
     }
 
     /**
-     * Send a message to {@link #predecessor} to check if it is alive
-     */
-    void checkPredecessor() {
-        forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new CheckPredecessorRequest(properties));
-    }
-
-    /**
      * Send the files to be assigned to other nodes
      */
     public void distributeResource(File file, boolean backup) {
- /*       if (backup){
+        if (backup) {
             saveFile(file, "backup");
         }
         else {
             saveFile(file, "online");
             forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
         }
-  */
     }
 
     public void giveBackupResourcesToSuccessor(NodeProperties properties) {
- /*       File folder = new File("./node" + this.properties.getNodeId() + "/online");
+        File folder = new File("./node" + this.properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
 
         // TODO: after the switch to the Visitor pattern, send them as a list
         for (File file : allFiles) {
             forwarder.makeRequest(properties.getIpAddress(), properties.getTcpServerPort(), new DistributeResourceRequest(file, true));
         }
-
-  */
     }
 
     public void deleteBackupFile(File f) {
@@ -716,7 +681,6 @@ public class Node {
      * Terminate all the threads and close the socket connection of the server side
      */
     public void close() {
-        checkPredecessorThread.shutdownNow();
         fixFingersThread.shutdownNow();
         stabilizeThread.shutdownNow();
         forwarderThread.shutdownNow();
