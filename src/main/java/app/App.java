@@ -141,8 +141,6 @@ public class App {
         for (int i = 0; i < RESOURCES_NUMBER; i++) {
             String filename = "Node" + node.getProperties().getNodeId() + "-File" + i;
             File f = new File("./node" + node.getProperties().getNodeId() + "/offline/" + filename);
-            /*if (!f.getParentFile().exists())
-                f.getParentFile().mkdirs();*/
             if (!f.exists()) {
                 try {
                     f.createNewFile();

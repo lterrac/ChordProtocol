@@ -29,7 +29,7 @@ public class ClientSocket {
     }
 
     /**
-     * Close the socket
+     * Closes the socket associated to the current node
      */
     public void close() {
         try {
