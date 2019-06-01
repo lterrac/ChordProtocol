@@ -77,6 +77,12 @@ public class Node {
      * UDP ping implementation
      */
 
+    private final Object nodeLock;
+    private final Object predecessorLock;
+    private final Object fingersLock;
+    private final Object successorsLock;
+    private final Object fileLock;
+
     private PingServer pingSuccessorServer;
     private PingServer pingPredecessorServer;
     private PingSuccessor pingSuccessor;
@@ -92,6 +98,12 @@ public class Node {
         successors = new ArrayDeque<>(KEY_SIZE);
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
+
+        nodeLock = new Object();
+        predecessorLock = new Object();
+        successorsLock = new Object();
+        fingersLock = new Object();
+        fileLock = new Object();
     }
 
     // Getter
@@ -109,45 +121,47 @@ public class Node {
     }
 
     public void setPredecessor(NodeProperties predecessor) {
+        synchronized (predecessorLock) {
+            this.predecessor = predecessor;
 
-        this.predecessor = predecessor;
-
-        if (pingPredecessor != null) {
-            pingPredecessor.terminate();
-            logger.log(Level.INFO, "stopped pingPredecessor client");
-        }
+            if (pingPredecessor != null) {
+                pingPredecessor.terminate();
+                logger.log(Level.INFO, "stopped pingPredecessor client");
+            }
 
 
-        if (predecessor != null) {
-            //create a new one only if I am not the last node left in the network
-            //   if (predecessor.getNodeId() != properties.getNodeId()) { //TODO Non penso proprio possa accadere il contrario
+            if (predecessor != null) {
                 logger.log(Level.INFO, "A node crashed. I'm building another pingPredecessor client for predecessor " + predecessor.getNodeId());
                 pingPredecessor = new PingPredecessor(this, predecessor.getIpAddress(), predecessor.getUdpPredecessorServerPort(), predecessor.getNodeId());
                 new Thread(pingPredecessor).start();
 
                 deleteBackupFolderAndRecreate();
                 askPredecessorForBackupResources();
-            // }
-        } else {
-            pingPredecessor = null;
+            } else {
+                pingPredecessor = null;
 
-            transferBackupsToOnline();
+                transferBackupsToOnline();
+            }
         }
     }
 
     void updateSuccessors(Deque<NodeProperties> sList) {
-        successors = sList;
+        synchronized (successorsLock) {
+            successors = sList;
+        }
     }
 
     public Deque<NodeProperties> getCustomizedSuccessors() {
-        Deque<NodeProperties> newList = new ArrayDeque<>(successors);
+        synchronized (successorsLock) {
+            Deque<NodeProperties> newList = new ArrayDeque<>(successors);
 
-        if (newList.size() >= KEY_SIZE) {
-            newList.removeLast();
+            if (newList.size() >= KEY_SIZE) {
+                newList.removeLast();
+            }
+            newList.addFirst(properties);
+
+            return newList;
         }
-        newList.addFirst(properties);
-
-        return newList;
     }
 
     /**
