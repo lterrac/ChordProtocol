@@ -165,7 +165,7 @@ public class Node {
                 newList.removeLast();
             }
             newList.addFirst(properties);
-
+            
             return newList;
         }
     }

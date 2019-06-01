@@ -23,6 +23,9 @@ public class ClientSocket {
         return out;
     }
 
+    /**
+     * Closes the socket associated to the current node
+     */
     public void close() {
         try {
             socket.close();
