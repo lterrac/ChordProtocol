@@ -145,12 +145,18 @@ public class Node {
         }
     }
 
+    /**
+     * Updates the successor list of the current node
+     */
     void updateSuccessors(Deque<NodeProperties> sList) {
         synchronized (successorsLock) {
             successors = sList;
         }
     }
 
+    /**
+     * TODO
+     */
     public Deque<NodeProperties> getCustomizedSuccessors() {
         synchronized (successorsLock) {
             Deque<NodeProperties> newList = new ArrayDeque<>(successors);
@@ -392,6 +398,9 @@ public class Node {
         }
     }
 
+    /**
+     * The current node transfers its backup resources to the online folder
+     */
     private void transferBackupsToOnline() {
         //Move from backup to online
         System.out.println("save file because the predecessor is null");
@@ -404,6 +413,9 @@ public class Node {
         }
     }
 
+    /**
+     * The current node asks the predecessor for its online resources to put them in its backup folder
+     */
     public void askPredecessorForBackupResources(){
         System.out.println("ask to predecessor " + sha1(predecessor.getIpAddress() + ":" + predecessor.getTcpServerPort()) + "for backup resources");
         forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new AskPredecessorBackupResourcesRequest(properties));
@@ -648,6 +660,10 @@ public class Node {
         }
     }
 
+    /**
+     * Sends the backup resources of the current node to its successor.
+     * @param properties is the node to which the resources are sent
+     */
     public void giveBackupResourcesToSuccessor(NodeProperties properties) {
         File folder = new File("./node" + this.properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
@@ -658,6 +674,10 @@ public class Node {
         }
     }
 
+    /**
+     * Deletes a file in the backup folder.
+     * @param f is the file to be deleted
+     */
     public void deleteBackupFile(File f) {
         File folder = new File("./node" + this.properties.getNodeId() + "/backup");
         File[] allFiles = folder.listFiles();
@@ -669,6 +689,9 @@ public class Node {
         }
     }
 
+    /**
+     * Deletes the backup folder and recreates a new one.
+     */
     public void deleteBackupFolderAndRecreate() {
         File folder = new File("./node" + this.properties.getNodeId() + "/backup");
         File[] allFiles = folder.listFiles();
@@ -682,16 +705,16 @@ public class Node {
             f.getParentFile().mkdirs();
     }
 
+    /*
     public void transferOnLeave() {
         File folder = new File("./node" + properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
 
-        // TODO: after the switch to the Visitor pattern, send them as a list
         for (File file : allFiles) {
             forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new TransferAfterLeaveRequest(file));
             file.delete();
         }
-    }
+    }*/
 
     /**
      * Notify your neighbours (Successor and predecessor) that the current node is leaving the network
@@ -719,6 +742,9 @@ public class Node {
             pingSuccessorServer.terminate();
     }
 
+    /**
+     * Prints the coordinates of the server
+     */
     public void printServerCoordinates() {
         System.out.println("Server coordinates:");
         System.out.println("ID: " + properties.getNodeId());
@@ -776,6 +802,9 @@ public class Node {
         System.out.println("------------------------------------------\n");
     }
 
+    /**
+     * Prints the list of successors
+     */
     public void printSuccessors() {
         System.out.println("List of successors contained by node " + properties.getNodeId() + ":");
 

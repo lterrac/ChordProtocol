@@ -44,6 +44,9 @@ public class NodeProperties implements Serializable {
             return value > firstBound || value <= secondBound;
     }
 
+    /**
+     * TODO
+     */
     static boolean checkResourcesForPredecessor(int value, int pred, int curr) {
         if (pred < curr)
             return value > curr || value <= pred;
