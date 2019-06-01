@@ -404,7 +404,7 @@ public class Node {
         }
     }
 
-    public void askPredecessorForBackupResources(){
+    public void askPredecessorForBackupResources() {
         System.out.println("ask to predecessor " + sha1(predecessor.getIpAddress() + ":" + predecessor.getTcpServerPort()) + "for backup resources");
         forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new AskPredecessorBackupResourcesRequest(properties));
     }
@@ -461,7 +461,7 @@ public class Node {
 
     /**
      * Starts the routines :
-     *
+     * <p>
      * - Check Predecessor
      * - Fix Fingers
      * - Stabilize
@@ -590,7 +590,7 @@ public class Node {
     /**
      * Save a file into the "/online" folder
      *
-     * @param file File that has to be saved
+     * @param file   File that has to be saved
      * @param folder
      */
     public void saveFile(File file, String folder) {
@@ -641,8 +641,7 @@ public class Node {
     public void distributeResource(File file, boolean backup) {
         if (backup) {
             saveFile(file, "backup");
-        }
-        else {
+        } else {
             saveFile(file, "online");
             forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
         }

@@ -9,12 +9,10 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.logging.Logger;
 
 
 public class RequestHandler extends Thread implements RequestHandlerInterface {
 
-    private static final Logger logger = Logger.getLogger(RequestHandler.class.getName());
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private Socket client;
@@ -42,47 +40,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     private void readResponse() {
         try {
-            /*
-            //TODO Decide to use Visitor pattern or not.
-              In this case the object will call the handle() method which will be
-              managed by the method overridden in the Node class. Otherwise keep the switch
-              case and call different methods, always defined in node.
-
-              example : RequestObj request = ((RequestObj) in.readObject()).handle(node);
-            */
-
             ((Request) in.readObject()).handleRequest(this);
-
-            /*
-            switch (msg.getMessage()) {
-                case "ping": {
-                    String senderIp = msg.getProperties().getIpAddress();
-                    int senderPort = msg.getProperties().getTcpServerPort();
-                    node.forward(msg.getProperties(), senderIp, senderPort, "ping_reply", 0, 0, 0, null);
-                }
-                break;
-                case "ping_reply": {
-                    System.out.println("Ping message received from node " + msg.getProperties().getNodeId());
-                    System.out.println("------------------------------------------\n");
-                }
-                break;
-
-
-                case "file_to_predecessor": {
-                     TODO check if inconsistency w.r.t. predecessor trigger
-                    if (sha1(msg.getFile().getName()) <= node.getPredecessor().getNodeId()) {
-                        node.sendResource(node.getPredecessor().getIpAddress(), node.getPredecessor().getTcpServerPort(), "file_to_predecessor", msg.getFile());
-                    }
-                    node.saveFile(msg.getFile());
-                }
-                break;
-
-
-                default:
-                    logger.log(Level.SEVERE, "This request doesn't exist.");
-
-            }
-            */
         } catch (EOFException | SocketException e) {
             if (!stop) {
                 close();
@@ -125,7 +83,6 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     }
 
     //search for the successor of the node received from the network
-
 
     @Override
     public void handle(AskPredecessorBackupResourcesRequest request) {
@@ -207,7 +164,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         int receiverPort = request.getProperties().getTcpServerPort();
 
         //TODO Check if it is the right behaviour
-        node.getForwarder().makeRequest( receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor(), node.getCustomizedSuccessors()));
+        node.getForwarder().makeRequest(receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor(), node.getCustomizedSuccessors()));
     }
 
     //Once the predecessor is arrived, set it into the dedicated thread and call notify()
@@ -219,7 +176,6 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(NotifyRequest request) {
-        //  System.out.println("notify");
         node.notifySuccessor(request.getProperties());
     }
 

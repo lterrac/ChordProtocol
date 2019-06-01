@@ -37,6 +37,6 @@ public class LookupReplyRequest implements Request {
 
     @Override
     public void handleRequest(RequestHandler handler) {
-        handler.handle(this );
+        handler.handle(this);
     }
 }

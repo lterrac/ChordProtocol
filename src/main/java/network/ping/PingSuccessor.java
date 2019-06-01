@@ -3,7 +3,6 @@ package network.ping;
 import model.Node;
 
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
 
 public class PingSuccessor extends PingClient {
@@ -18,12 +17,7 @@ public class PingSuccessor extends PingClient {
     }
 
     @Override
-    protected void printMissingPackets(int missed) {
-        System.out.println("\t\t missing successor packets " + missed + "from node " + targetNodeId);
-    }
-
-    @Override
-    protected void printAMiss(Logger logger) {
-        logger.log(Level.SEVERE, "Missing successor packet from node " + targetNodeId);
+    protected void printAMiss() {
+        PingClient.logger.log(Level.SEVERE, "Missing successor packet from node " + targetNodeId);
     }
 }

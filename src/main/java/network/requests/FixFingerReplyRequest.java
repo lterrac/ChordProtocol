@@ -26,6 +26,7 @@ public class FixFingerReplyRequest implements Request {
     public int getFixIndex() {
         return fixIndex;
     }
+
     @Override
     public void handleRequest(RequestHandler handler) {
         handler.handle(this);

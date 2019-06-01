@@ -19,10 +19,18 @@ public class ClientSocket {
         this.out = out;
     }
 
+    /**
+     * Get the object output stream of the socket
+     *
+     * @return the {@code out}
+     */
     public ObjectOutputStream getOutputStream() {
         return out;
     }
 
+    /**
+     * Close the socket
+     */
     public void close() {
         try {
             socket.close();

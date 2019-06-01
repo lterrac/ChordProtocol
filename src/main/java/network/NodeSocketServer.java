@@ -7,11 +7,9 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Logger;
 
 public class NodeSocketServer implements Runnable {
 
-    private static final Logger logger = Logger.getLogger(NodeSocketServer.class.getName());
     private final ServerSocket serverSocket;
     private final ExecutorService pool;
     private Node node;

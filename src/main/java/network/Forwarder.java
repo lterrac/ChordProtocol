@@ -110,7 +110,6 @@ public class Forwarder implements Runnable {
 
                 //Get the streams
                 out = new ObjectOutputStream(socket.getOutputStream());
-                //   in = new ObjectInputStream(socket.getInputStream());
 
                 //Create the wrapper for the socket and the streams
                 clientSocket = new ClientSocket(socket, in, out);
@@ -125,31 +124,15 @@ public class Forwarder implements Runnable {
 
             this.clientSocket = socketMap.get(ip + ":" + port);
 
-            //Create the message and send it
-            //Message msg = new Message(nodeInformation, message, fixId, fixIndex, lookupKey, file);
-
-            /*if (debug)
-                LOGGER.log(Level.FINE, "Target: " + sha1(ip + ":" + port) + " message:" + message);*/
-
-
             request(request);
-            /*clientSocket.getOutputStream().writeObject(msg);
-            clientSocket.getOutputStream().flush();
-            clientSocket = null;*/
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
-            if (lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey())))
-                //              System.out.println("Removed lastMessage timestamp t of node " + sha1(ip + ":" + port));
-                //       else
-                //            System.out.println("Already removed from lastMessage");
-
+            if (lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()))) {
                 if (socketMap.remove(ip + ":" + port) != null) {
-                    //          System.out.println("Removed socket of node " + sha1(ip + ":" + port));
                     clientSocket.close();
-                    //     } else
-                    //        System.out.println("Already removed the socket");
                 }
+            }
         }
     }
 

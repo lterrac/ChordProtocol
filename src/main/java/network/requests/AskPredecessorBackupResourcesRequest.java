@@ -6,6 +6,7 @@ import network.RequestHandler;
 public class AskPredecessorBackupResourcesRequest implements Request {
 
     private NodeProperties properties;
+
     public AskPredecessorBackupResourcesRequest(NodeProperties properties) {
         this.properties = properties;
     }
