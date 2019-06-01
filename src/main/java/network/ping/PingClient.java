@@ -124,7 +124,7 @@ public abstract class PingClient implements Runnable {
                 logger.log(Level.SEVERE, "The packet " + i + " didn't receive a reply in time.");
                 missed++;
             } catch (IOException e) {
-                printAMiss(logger);
+                //       printAMiss(logger);
                 missed++;
             }
 

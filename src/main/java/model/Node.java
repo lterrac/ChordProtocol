@@ -120,26 +120,18 @@ public class Node {
 
         if (predecessor != null) {
             //create a new one only if I am not the last node left in the network
-            if (predecessor.getNodeId() != properties.getNodeId()) {
+            //   if (predecessor.getNodeId() != properties.getNodeId()) { //TODO Non penso proprio possa accadere il contrario
                 logger.log(Level.INFO, "A node crashed. I'm building another pingPredecessor client for predecessor " + predecessor.getNodeId());
                 pingPredecessor = new PingPredecessor(this, predecessor.getIpAddress(), predecessor.getUdpPredecessorServerPort(), predecessor.getNodeId());
                 new Thread(pingPredecessor).start();
 
                 deleteBackupFolderAndRecreate();
                 askPredecessorForBackupResources();
-            }
+            // }
         } else {
             pingPredecessor = null;
 
-            //Move from backup to online
-            System.out.println("save file because the predecessor is null");
-            File folder = new File("./node" + this.properties.getNodeId() + "/backup");
-            File[] allFiles = folder.listFiles();
-            for (File file : allFiles) {
-                saveFile(file, "online");
-                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
-                file.delete();
-            }
+            transferBackupsToOnline();
         }
     }
 
@@ -163,8 +155,11 @@ public class Node {
      */
     public void replaceSuccessor() {
 
+        System.out.println("replace successor");
+
         synchronized (fingers[0]) {
             fingers[0] = successors.removeFirst();
+            System.out.println("Now successor is " + successor().getNodeId());
         }
 
         //stop the old pinger if exists
@@ -231,6 +226,9 @@ public class Node {
      * @param node the successor
      */
     public void setSuccessor(NodeProperties node) {
+
+        System.out.println("set successor");
+
         synchronized (fingers) {
             this.fingers[0] = node;
         }
@@ -377,6 +375,18 @@ public class Node {
                 forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new TellSuccessorToDeleteBackupRequest(f));
                 f.delete();
             }
+        }
+    }
+
+    private void transferBackupsToOnline() {
+        //Move from backup to online
+        System.out.println("save file because the predecessor is null");
+        File folder = new File("./node" + this.properties.getNodeId() + "/backup");
+        File[] allFiles = folder.listFiles();
+        for (File file : allFiles) {
+            saveFile(file, "online");
+            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
+            file.delete();
         }
     }
 
@@ -674,7 +684,7 @@ public class Node {
      */
     public void notifyNeighbours() {
         forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new UpdateSuccessorRequest(successor()));
-        forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new UpdatePredecessorRequest(predecessor));
+        // forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new UpdatePredecessorRequest(predecessor));
     }
 
     /**

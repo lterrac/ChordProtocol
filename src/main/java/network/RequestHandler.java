@@ -219,6 +219,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
 
     @Override
     public void handle(NotifyRequest request) {
+        //  System.out.println("notify");
         node.notifySuccessor(request.getProperties());
     }
 

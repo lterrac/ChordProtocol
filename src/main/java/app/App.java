@@ -138,8 +138,8 @@ public class App {
     }
 
     private static void exit() {
-        node.transferOnLeave();
-        node.notifyNeighbours();
+        //node.transferOnLeave();
+        //node.notifyNeighbours();
         node.close();
         System.exit(0);
     }
