@@ -23,7 +23,7 @@ public class PingServer implements Runnable {
         while (!createdDatagramSocket) {
             try {
                 socket = new DatagramSocket();
-                printCoordinates();
+                // printCoordinates(); TODO
                 createdDatagramSocket = true;
             } catch (SocketException e) {
                 logger.log(Level.WARNING, "Failed to open the datagram socket server. I'll retry in a second!");

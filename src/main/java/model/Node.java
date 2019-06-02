@@ -14,11 +14,13 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
-import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -35,16 +37,24 @@ public class Node {
     /**
      * Finger table of the node
      */
-    private final NodeProperties[] fingers = new NodeProperties[KEY_SIZE];
-    /**
-     * UDP ping implementation
-     */
+    private final NodeProperties[] fingerArray;
 
+    /**
+     * Atomic reference to the {@link #fingerArray}
+     */
+    private final AtomicReferenceArray<NodeProperties> fingers;
+    /**
+     * Lock for the properties of the current node
+     */
     private final Object nodeLock;
+    /**
+     * Lock for the properties of the predecessor node
+     */
     private final Object predecessorLock;
-    private final Object fingersLock;
+    /**
+     * Lock for the properties of the successorsList
+     */
     private final Object successorsLock;
-    private final Object fileLock;
     /**
      * Represents the "client side" of a node. It sends requests to other nodes
      */
@@ -74,33 +84,41 @@ public class Node {
      */
     private NodeSocketServer nodeSocketServer;
     private ServerSocket serverSocket;
+
+    /**
+     * UDP ping implementation
+     */
     private PingServer pingSuccessorServer;
     private PingServer pingPredecessorServer;
     private PingSuccessor pingSuccessor;
     private PingPredecessor pingPredecessor;
-
     /**
      * Useful to save the index of the finger table to which to apply the fix_finger algorithm
      */
     private int n_fix;
 
     public Node() {
+        fingerArray = new NodeProperties[KEY_SIZE];
         n_fix = -1;
-        successors = new ArrayDeque<>(KEY_SIZE);
+        successors = new ConcurrentLinkedDeque<>();
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
-
         nodeLock = new Object();
+        fingers = new AtomicReferenceArray<>(fingerArray);
         predecessorLock = new Object();
         successorsLock = new Object();
-        fingersLock = new Object();
-        fileLock = new Object();
     }
 
-    // Getter
+    /*--------------------------------------
+     *                                     *
+     *            Getter                   *
+     *                                     *
+     --------------------------------------*/
 
     public NodeProperties getProperties() {
-        return properties;
+        synchronized (nodeLock) {
+            return properties;
+        }
     }
 
     public ServerSocket getServerSocket() {
@@ -108,99 +126,59 @@ public class Node {
     }
 
     public NodeProperties getPredecessor() {
-        return predecessor;
+        synchronized (predecessorLock) {
+            return predecessor;
+        }
     }
 
     public void setPredecessor(NodeProperties predecessor) {
         synchronized (predecessorLock) {
             this.predecessor = predecessor;
-
-            if (pingPredecessor != null) {
-                pingPredecessor.terminate();
-                logger.log(Level.INFO, "stopped pingPredecessor client");
-            }
-
-
-            if (predecessor != null) {
-                logger.log(Level.INFO, "A node crashed. I'm building another pingPredecessor client for predecessor " + predecessor.getNodeId());
-                pingPredecessor = new PingPredecessor(this, predecessor.getIpAddress(), predecessor.getUdpPredecessorServerPort(), predecessor.getNodeId());
-                new Thread(pingPredecessor).start();
-
-                deleteBackupFolderAndRecreate();
-                askPredecessorForBackupResources();
-            } else {
-                pingPredecessor = null;
-
-                transferBackupsToOnline();
-            }
         }
+
+        if (pingPredecessor != null) {
+            pingPredecessor.terminate();
+            logger.log(Level.INFO, "stopped pingPredecessor client");
+        }
+
+        if (predecessor != null) {
+            logger.log(Level.INFO, "A node crashed. I'm building another pingPredecessor client for predecessor " + predecessor.getNodeId());
+            pingPredecessor = new PingPredecessor(this, predecessor.getIpAddress(), predecessor.getUdpPredecessorServerPort(), predecessor.getNodeId());
+            new Thread(pingPredecessor).start();
+
+            deleteBackupFolderAndRecreate();
+            askPredecessorForBackupResources();
+        } else {
+            pingPredecessor = null;
+            transferBackupsToOnline();
+        }
+
     }
 
     /**
-     * Updates the successor list of the current node
-     */
-    void updateSuccessors(Deque<NodeProperties> sList) {
-        synchronized (successorsLock) {
-            successors = sList;
-        }
-    }
-
-    /**
-     * TODO
+     * Get the list of successor adding the current node itself
      */
     public Deque<NodeProperties> getCustomizedSuccessors() {
-        synchronized (successorsLock) {
-            Deque<NodeProperties> newList = new ArrayDeque<>(successors);
+        Deque<NodeProperties> newList = new ConcurrentLinkedDeque<>(successors);
 
-            if (newList.size() >= KEY_SIZE) {
-                newList.removeLast();
-            }
-            newList.addFirst(properties);
-
-            return newList;
+        if (newList.size() >= KEY_SIZE) {
+            newList.removeLast();
         }
+        newList.addFirst(properties);
+
+        return newList;
     }
 
-    /**
-     * Replace the successor after having detected that has crashed. The new successor will be the next in the successors list
-     */
-    public void replaceSuccessor() {
-
-        System.out.println("replace successor");
-
-        synchronized (fingers[0]) {
-            fingers[0] = successors.removeFirst();
-            System.out.println("Now successor is " + successor().getNodeId());
-        }
-
-        //stop the old pinger if exists
-        if (pingSuccessor != null) {
-            pingSuccessor.terminate();
-            logger.log(Level.INFO, "stopped pingSuccessor client");
-        }
-
-        //create a new one only if I am not the last node left in the network
-        if (successor().getNodeId() != properties.getNodeId()) {
-            logger.log(Level.INFO, "A node crashed. I'm building another pingSuccessor client for successor " + successor().getNodeId());
-            NodeProperties successor = successor();
-            pingSuccessor = new PingSuccessor(this, successor.getIpAddress(), successor.getUdpSuccessorServerPort(), successor.getNodeId());
-            new Thread(pingSuccessor).start();
-        }
-    }
-
-    public Forwarder getForwarder() {
+    public synchronized Forwarder getForwarder() {
         return forwarder;
     }
-
-
-    // Setter
 
     /**
      * Get the Ip address of the current node
      *
      * @return the Ip address of the machine on which the node is running
      */
-    private String getCurrentIp() {
+    private synchronized String getCurrentIp() {
         //Find Ip address, it will be published later for joining
         InetAddress currentIp = null;
         try {
@@ -218,9 +196,25 @@ public class Node {
      *
      * @return true if it is not null, otherwise false
      */
-    boolean isPredecessorSet() {
+    synchronized boolean isPredecessorSet() {
         return predecessor != null;
     }
+
+    /**
+     * Check if the current node is the last in the network
+     *
+     * @return true if it is the last one, otherwise false
+     */
+    private boolean isNodeAlone() {
+        return successor().equals(properties);
+    }
+
+
+    /*--------------------------------------
+     *                                     *
+     *            Setter                   *
+     *                                     *
+     --------------------------------------*/
 
     /**
      * Get the finger 0 of the finger table
@@ -228,7 +222,26 @@ public class Node {
      * @return Node successor
      */
     public NodeProperties successor() {
-        return fingers[0];
+        return fingers.get(0);
+    }
+
+    /**
+     * Update the finger table
+     *
+     * @param i       is the index of the table
+     * @param newNode is the new value for the row with index i in the table
+     */
+    public void updateFinger(int i, NodeProperties newNode) {
+        fingers.set(i, newNode);
+    }
+
+    /**
+     * Updates the successor list of the current node
+     */
+    void updateSuccessors(Deque<NodeProperties> sList) {
+        synchronized (successorsLock) {
+            successors = sList;
+        }
     }
 
     /**
@@ -240,9 +253,8 @@ public class Node {
 
         System.out.println("set successor");
 
-        synchronized (fingers) {
-            this.fingers[0] = node;
-        }
+        fingers.set(0, node);
+
 
         if (pingSuccessor != null) {
             pingSuccessor.terminate();
@@ -256,16 +268,46 @@ public class Node {
             pingSuccessor = new PingSuccessor(this, successor.getIpAddress(), successor.getUdpSuccessorServerPort(), successor.getNodeId());
             new Thread(pingSuccessor).start();
         }
-
     }
 
     /**
-     * Update the predecessor node of the successor in the stabilize thread and the successors list
-     *
-     * @param newNode is the node to be set as predecessor for the successor
+     * Replace the successor after having detected that has crashed. The new successor will be the next in the successors list
      */
-    public void finalizeStabilize(NodeProperties newNode, Deque<NodeProperties> successors) {
-        stabilize.finalizeStabilize(newNode, successors);
+    public void replaceSuccessor() {
+
+        System.out.println("replace successor");
+
+        fingers.set(0, successors.removeFirst());
+        System.out.println("Now successor is " + successor().getNodeId());
+
+
+        //stop the old pinger if exists
+        if (pingSuccessor != null) {
+            pingSuccessor.terminate();
+            logger.log(Level.INFO, "stopped pingSuccessor client");
+        }
+
+        //create a new one only if I am not the last node left in the network
+        if (successor().getNodeId() != properties.getNodeId()) {
+            logger.log(Level.INFO, "A node crashed. I'm building another pingSuccessor client for successor " + successor().getNodeId());
+            NodeProperties successor = successor();
+            pingSuccessor = new PingSuccessor(this, successor.getIpAddress(), successor.getUdpSuccessorServerPort(), successor.getNodeId());
+            new Thread(pingSuccessor).start();
+        }
+    }
+
+
+    /**
+     * Update and return the n_fix variable to properly run the fix_finger algorithm
+     *
+     * @return the index of the finger table to be used during the fix_finger algorithm
+     */
+    int nextFinger() {
+        if (n_fix == KEY_SIZE - 1)
+            n_fix = 0;
+        else
+            n_fix += 1;
+        return n_fix;
     }
 
     /**
@@ -286,116 +328,12 @@ public class Node {
         return serverSocket;
     }
 
-    /**
-     * Create a new Chord Ring
-     */
-    public void create() {
+    /*--------------------------------------
+     *                                     *
+     *            Init methods             *
+     *                                     *
+     --------------------------------------*/
 
-        startNode();
-
-        startThreads();
-
-        nodeSocketServer = new NodeSocketServer(this);
-
-        new Thread(nodeSocketServer).start();
-    }
-
-    /**
-     * Join a Ring containing the known Node
-     */
-    public void join(String ip, int port) {
-        startNode();
-        forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties));
-
-        startThreads();
-        nodeSocketServer = new NodeSocketServer(this);
-
-        new Thread(nodeSocketServer).start();
-    }
-
-    /**
-     * Check if the current node is the last in the network
-     *
-     * @return true if it is the last one, otherwise false
-     */
-    private boolean isNodeAlone() {
-        return successor().equals(properties);
-    }
-
-    /**
-     * Pubblish the resources into the network.
-     * It moves them from the folder "/offline" to "/online"
-     */
-    public void publishResources() {
-        //case in which you're the only node in the network, so your files are moved from the offline folder to the online one;
-        if (isNodeAlone()) {
-            File folder = new File("./node" + properties.getNodeId() + "/offline");
-            File[] allFiles = folder.listFiles();
-            for (File file : allFiles) {
-                saveFile(file, "online");
-                file.delete();
-            }
-        }
-        //common case, resources forwarded to others
-        else {
-            File folder = new File("./node" + properties.getNodeId() + "/offline");
-            File[] allFiles = folder.listFiles();
-            for (File file : allFiles) {
-                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new LookupRequest(properties, sha1(file.getName()), true, file));
-                file.delete();
-            }
-        }
-        System.out.println("You correctly published your resources! Some of them could have been forwarded to other nodes, while some could still be of your property placed in your online folder");
-    }
-
-    /**
-     * Ask to the successor if it holds some resources that needs to be managed by the current node
-     */
-    public void askSuccessorForResources() {
-        forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new AskSuccessorResourcesRequest(properties));
-    }
-
-    /**
-     * Check if some file needs to be managed by the predecessor and in case sends the files back and deletes its copy.
-     * The predecessor is passed as a parameter because, when a node joins the network, {@link #predecessor} may not
-     * be already set by the {@link #notifySuccessor(NodeProperties)}
-     *
-     * @param nodeProperties predecessor of the node
-     */
-    public void giveResourcesToPredecessor(NodeProperties nodeProperties) {
-        File folder = new File("./node" + properties.getNodeId() + "/online");
-        File[] allFiles = folder.listFiles();
-        for (File f : allFiles) {
-            if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
-                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getTcpServerPort(), new DistributeResourceRequest(f, false));
-                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new TellSuccessorToDeleteBackupRequest(f));
-                f.delete();
-            }
-        }
-    }
-
-    /**
-     * The current node transfers its backup resources to the online folder
-     */
-    private void transferBackupsToOnline() {
-        //Move from backup to online
-        System.out.println("save file because the predecessor is null");
-        File folder = new File("./node" + this.properties.getNodeId() + "/backup");
-        File[] allFiles = folder.listFiles();
-        for (File file : allFiles) {
-            saveFile(file, "online");
-            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
-            file.delete();
-        }
-    }
-
-    /**
-     * The current node asks the predecessor for its online resources to put them in its backup folder
-     */
-    public void askPredecessorForBackupResources() {
-        System.out.println("ask to predecessor " + sha1(predecessor.getIpAddress() + ":" + predecessor.getTcpServerPort()) + "for backup resources");
-        forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new AskPredecessorBackupResourcesRequest(properties));
-    }
 
     /**
      * Creates the primary classes of the node.
@@ -415,21 +353,6 @@ public class Node {
         initializeNode(ipAddress, tcpServerPort, udpSuccessorServerPort, udpPredecessorPort);
         forwarder = new Forwarder(properties.getNodeId());
         foldersCreation();
-    }
-
-    /**
-     * Create the folders "/online" and "/offline" for the node in which its resources will be stored
-     */
-    private void foldersCreation() {
-        File f = new File("./node" + properties.getNodeId() + "/offline/offlineFolderCreation");
-        if (!f.getParentFile().exists())
-            f.getParentFile().mkdirs();
-        File g = new File("./node" + properties.getNodeId() + "/online/" + "onlineFolderCreation");
-        if (!g.getParentFile().exists())
-            g.getParentFile().mkdirs();
-        File h = new File("./node" + properties.getNodeId() + "/backup/backupFolderCreation");
-        if (!h.getParentFile().exists())
-            h.getParentFile().mkdirs();
     }
 
     /**
@@ -466,6 +389,41 @@ public class Node {
     }
 
 
+    /*--------------------------------------
+     *                                     *
+     *            Protocol methods         *
+     *                                     *
+     --------------------------------------*/
+
+
+    /**
+     * Create a new Chord Ring
+     */
+    public void create() {
+
+        startNode();
+
+        startThreads();
+
+        nodeSocketServer = new NodeSocketServer(this);
+
+        new Thread(nodeSocketServer).start();
+    }
+
+    /**
+     * Join a Ring containing the known Node
+     */
+    public void join(String ip, int port) {
+        startNode();
+        forwarder.makeRequest(ip, port, new FindSuccessorRequest(properties));
+
+        startThreads();
+        nodeSocketServer = new NodeSocketServer(this);
+
+        new Thread(nodeSocketServer).start();
+    }
+
+
     /**
      * Notify the current node that a new predecessor can exists fot itself
      *
@@ -484,7 +442,6 @@ public class Node {
      * @param askingNode is the node that asked for findings its successor
      */
     public void findSuccessor(NodeProperties askingNode) {
-
         // check if there are two nodes with the same Id
         if (askingNode.getNodeId() == properties.getNodeId())
             logger.log(Level.SEVERE, "inconsistency: two nodes with the same ID");
@@ -500,6 +457,7 @@ public class Node {
             else
                 forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getTcpServerPort(), new FindSuccessorReplyRequest(properties));
         }
+
     }
 
     /**
@@ -511,7 +469,6 @@ public class Node {
      * @param fixIndex   is the index of the finger table to be updated
      */
     public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
-
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
             forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getTcpServerPort(), new FixFingerReplyRequest(successor(), fixId, fixIndex));
         } else {
@@ -539,21 +496,34 @@ public class Node {
 
         // first check the finger table
         for (int i = KEY_SIZE - 1; i >= 0 && !found; i--) {
-            if (fingers[i] != null && fingers[i].isInInterval(properties.getNodeId(), nodeId)) {
-                closest = fingers[i];
+            if (fingers.get(i) != null && fingers.get(i).isInInterval(properties.getNodeId(), nodeId)) {
+                closest = fingers.get(i);
                 found = true;
             }
         }
 
         // then check the successors list
-        for (NodeProperties n : successors) {
+        Iterator<NodeProperties> iterator = successors.iterator();
+        NodeProperties n;
+        while (iterator.hasNext()) {
+            n = iterator.next();
+
             if (n.getNodeId() > closest.getNodeId() && n.getNodeId() < nodeId) {
                 closest = n;
             }
         }
+
         return closest;
     }
 
+    /**
+     * Update the predecessor node of the successor in the stabilize thread and the successors list
+     *
+     * @param newNode is the node to be set as predecessor for the successor
+     */
+    public void finalizeStabilize(NodeProperties newNode, Deque<NodeProperties> successors) {
+        stabilize.finalizeStabilize(newNode, successors);
+    }
 
     /**
      * Look for the owner of a resource in the net.
@@ -573,7 +543,14 @@ public class Node {
             else
                 forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getTcpServerPort(), new LookupReplyRequest(properties, key, transfer, file));
         }
+
     }
+
+    /*--------------------------------------
+     *                                     *
+     *            Files                    *
+     *                                     *
+     --------------------------------------*/
 
     /**
      * Save a file into the "/online" folder
@@ -581,7 +558,7 @@ public class Node {
      * @param file   File that has to be saved
      * @param folder
      */
-    public void saveFile(File file, String folder) {
+    public synchronized void saveFile(File file, String folder) {
         FileOutputStream out = null;
         try {
             out = new FileOutputStream("./node" + properties.getNodeId() + "/" + folder + "/" + file.getName());
@@ -599,28 +576,94 @@ public class Node {
     }
 
     /**
-     * Update and return the n_fix variable to properly run the fix_finger algorithm
-     *
-     * @return the index of the finger table to be used during the fix_finger algorithm
+     * Create the folders "/online" and "/offline" for the node in which its resources will be stored
      */
-    int nextFinger() {
-        if (n_fix == KEY_SIZE - 1)
-            n_fix = 0;
-        else
-            n_fix += 1;
-        return n_fix;
+    private synchronized void foldersCreation() {
+        File f = new File("./node" + properties.getNodeId() + "/offline/offlineFolderCreation");
+        if (!f.getParentFile().exists())
+            f.getParentFile().mkdirs();
+        File g = new File("./node" + properties.getNodeId() + "/online/" + "onlineFolderCreation");
+        if (!g.getParentFile().exists())
+            g.getParentFile().mkdirs();
+        File h = new File("./node" + properties.getNodeId() + "/backup/backupFolderCreation");
+        if (!h.getParentFile().exists())
+            h.getParentFile().mkdirs();
     }
 
     /**
-     * Update the finger table
-     *
-     * @param i       is the index of the table
-     * @param newNode is the new value for the row with index i in the table
+     * Pubblish the resources into the network.
+     * It moves them from the folder "/offline" to "/online"
      */
-    public void updateFinger(int i, NodeProperties newNode) {
-        synchronized (fingers) {
-            fingers[i] = newNode;
+    public synchronized void publishResources() {
+        //case in which you're the only node in the network, so your files are moved from the offline folder to the online one;
+        if (isNodeAlone()) {
+            File folder = new File("./node" + properties.getNodeId() + "/offline");
+            File[] allFiles = folder.listFiles();
+            for (File file : allFiles) {
+                saveFile(file, "online");
+                file.delete();
+            }
         }
+        //common case, resources forwarded to others
+        else {
+            File folder = new File("./node" + properties.getNodeId() + "/offline");
+            File[] allFiles = folder.listFiles();
+            for (File file : allFiles) {
+                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new LookupRequest(properties, sha1(file.getName()), true, file));
+                file.delete();
+            }
+        }
+        System.out.println("You correctly published your resources! Some of them could have been forwarded to other nodes, while some could still be of your property placed in your online folder");
+    }
+
+    /**
+     * Ask to the successor if it holds some resources that needs to be managed by the current node
+     */
+    public void askSuccessorForResources() {
+        forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new AskSuccessorResourcesRequest(properties));
+    }
+
+    /**
+     * Check if some file needs to be managed by the predecessor and in case sends the files back and deletes its copy.
+     * The predecessor is passed as a parameter because, when a node joins the network, {@link #predecessor} may not
+     * be already set by the {@link #notifySuccessor(NodeProperties)}
+     *
+     * @param nodeProperties predecessor of the node
+     */
+    public synchronized void giveResourcesToPredecessor(NodeProperties nodeProperties) {
+        File folder = new File("./node" + properties.getNodeId() + "/online");
+        File[] allFiles = folder.listFiles();
+        for (File f : allFiles) {
+            if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
+                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getTcpServerPort(), new DistributeResourceRequest(f, false));
+                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new TellSuccessorToDeleteBackupRequest(f));
+                f.delete();
+            }
+        }
+    }
+
+    /**
+     * The current node transfers its backup resources to the online folder
+     */
+
+    private synchronized void transferBackupsToOnline() {
+        //Move from backup to online
+        System.out.println("save file because the predecessor is null");
+        File folder = new File("./node" + this.properties.getNodeId() + "/backup");
+        File[] allFiles = folder.listFiles();
+        for (File file : allFiles) {
+            saveFile(file, "online");
+            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
+            file.delete();
+        }
+    }
+
+    /**
+     * The current node asks the predecessor for its online resources to put them in its backup folder
+     */
+    public void askPredecessorForBackupResources() {
+        System.out.println("ask to predecessor " + sha1(predecessor.getIpAddress() + ":" + predecessor.getTcpServerPort()) + "for backup resources");
+        forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new AskPredecessorBackupResourcesRequest(properties));
     }
 
     /**
@@ -640,7 +683,7 @@ public class Node {
      *
      * @param properties is the node to which the resources are sent
      */
-    public void giveBackupResourcesToSuccessor(NodeProperties properties) {
+    public synchronized void giveBackupResourcesToSuccessor(NodeProperties properties) {
         File folder = new File("./node" + this.properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
 
@@ -655,7 +698,7 @@ public class Node {
      *
      * @param f is the file to be deleted
      */
-    public void deleteBackupFile(File f) {
+    public synchronized void deleteBackupFile(File f) {
         File folder = new File("./node" + this.properties.getNodeId() + "/backup");
         File[] allFiles = folder.listFiles();
 
@@ -669,7 +712,7 @@ public class Node {
     /**
      * Deletes the backup folder and recreates a new one.
      */
-    public void deleteBackupFolderAndRecreate() {
+    public synchronized void deleteBackupFolderAndRecreate() {
         File folder = new File("./node" + this.properties.getNodeId() + "/backup");
         File[] allFiles = folder.listFiles();
         for (File file : allFiles) {
@@ -682,42 +725,12 @@ public class Node {
             f.getParentFile().mkdirs();
     }
 
-    /*
-    public void transferOnLeave() {
-        File folder = new File("./node" + properties.getNodeId() + "/online");
-        File[] allFiles = folder.listFiles();
+    /*--------------------------------------
+     *                                     *
+     *            Print                    *
+     *                                     *
+     --------------------------------------*/
 
-        for (File file : allFiles) {
-            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new TransferAfterLeaveRequest(file));
-            file.delete();
-        }
-    }*/
-
-    /**
-     * Notify your neighbours (Successor and predecessor) that the current node is leaving the network
-     */
-    public void notifyNeighbours() {
-        forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new UpdateSuccessorRequest(successor()));
-        // forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new UpdatePredecessorRequest(predecessor));
-    }
-
-    /**
-     * Terminate all the threads and close the socket connection of the server side
-     */
-    public void close() {
-        fixFingersThread.shutdownNow();
-        stabilizeThread.shutdownNow();
-        forwarderThread.shutdownNow();
-        forwarder.stop();
-        nodeSocketServer.close();
-        forwarder.stop();
-
-        if (pingSuccessor != null)
-            pingSuccessor.terminate();
-
-        if (pingSuccessorServer != null)
-            pingSuccessorServer.terminate();
-    }
 
     /**
      * Prints the coordinates of the server
@@ -742,9 +755,9 @@ public class Node {
         System.out.println("i\tvalue\tbound");
 
         for (int i = 0; i < KEY_SIZE; i++) {
-            if (fingers[i] != null) {
+            if (fingers.get(i) != null) {
                 bound = (int) (Math.pow(2, i) + properties.getNodeId()) % limit;
-                System.out.println("[" + i + "]\t" + fingers[i].getNodeId() + "\t\t" + bound);
+                System.out.println("[" + i + "]\t" + fingers.get(i).getNodeId() + "\t\t" + bound);
             } else {
                 System.out.println("-");
             }
@@ -785,11 +798,33 @@ public class Node {
     public void printSuccessors() {
         System.out.println("List of successors contained by node " + properties.getNodeId() + ":");
 
-        for (NodeProperties n : successors) {
-            System.out.println(n.getNodeId());
+        // then check the successors list
+        Iterator<NodeProperties> iterator = successors.iterator();
+        NodeProperties n;
+        while (iterator.hasNext()) {
+            System.out.println((iterator.next()).getNodeId());
         }
 
         System.out.println("------------------------------------------\n");
     }
-}
 
+
+    /**
+     * Terminate all the threads and close the socket connection of the server side
+     */
+    public void close() {
+        fixFingersThread.shutdownNow();
+        stabilizeThread.shutdownNow();
+        forwarderThread.shutdownNow();
+        forwarder.stop();
+        nodeSocketServer.close();
+        forwarder.stop();
+
+        if (pingSuccessor != null)
+            pingSuccessor.terminate();
+
+        if (pingSuccessorServer != null)
+            pingSuccessorServer.terminate();
+    }
+
+}

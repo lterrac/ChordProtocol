@@ -8,7 +8,11 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.*;
 import java.util.stream.Collectors;
 
@@ -41,8 +45,8 @@ public class Forwarder implements Runnable {
     private ClientSocket clientSocket;
 
     public Forwarder(int nodeId) {
-        socketMap = new HashMap<>();
-        lastMessage = new HashMap<>();
+        socketMap = new ConcurrentHashMap<>();
+        lastMessage = new ConcurrentHashMap<>();
 
         if (debug) {
             Handler consoleHandler;
@@ -128,11 +132,9 @@ public class Forwarder implements Runnable {
 
         } catch (IOException e) {
             //If a socket is no more active, close it and remove it from HashMaps
-            if (lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()))) {
-                if (socketMap.remove(ip + ":" + port) != null) {
-                    clientSocket.close();
-                }
-            }
+            if (lastMessage.entrySet().removeIf(longStringEntry -> (ip + ":" + port).equals(longStringEntry.getKey()))
+                    && socketMap.remove(ip + ":" + port) != null)
+                clientSocket.close();
         }
     }
 
@@ -142,7 +144,6 @@ public class Forwarder implements Runnable {
      * @param request Request to send
      */
     public void request(Request request) throws IOException {
-
         try {
             clientSocket.getOutputStream().writeObject(request);
             clientSocket.getOutputStream().flush();
@@ -158,10 +159,7 @@ public class Forwarder implements Runnable {
      * @param port Port of the node
      */
     private void updateLastMessage(String ip, int port) {
-        synchronized (lastMessage) {
-            lastMessage.replace(ip + ":" + port, new Date().getTime());
-        }
-
+        lastMessage.replace(ip + ":" + port, new Date().getTime());
     }
 
     /**
@@ -171,9 +169,7 @@ public class Forwarder implements Runnable {
      * @param port Port of the node
      */
     private void addToLastMessage(String ip, int port) {
-        synchronized (lastMessage) {
-            lastMessage.put(ip + ":" + port, new Date().getTime());
-        }
+        lastMessage.put(ip + ":" + port, new Date().getTime());
     }
 
 
@@ -188,16 +184,14 @@ public class Forwarder implements Runnable {
         List<String> socketToClose;
         List<ClientSocket> sockets = new ArrayList<>();
 
-        synchronized (lastMessage) {
-            //Find the sockets unused
-            socketToClose = lastMessage.entrySet().stream()
-                    .filter(ts -> (new Date().getTime() - ts.getValue()) > 10000)
-                    .map(Map.Entry::getKey)
-                    .collect(Collectors.toList());
+        //Find the sockets unused
+        socketToClose = lastMessage.entrySet().stream()
+                .filter(ts -> (new Date().getTime() - ts.getValue()) > 10000)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
 
-            //Delete them from lastMessage
-            socketToClose.forEach(lastMessage::remove);
-        }
+        //Delete them from lastMessage
+        socketToClose.forEach(lastMessage::remove);
 
         if (debug) {
             LOGGER.log(Level.SEVERE, "\tSocket to close");
@@ -217,17 +211,12 @@ public class Forwarder implements Runnable {
             LOGGER.log(Level.SEVERE, stringBuilder2.toString());
         }
 
+        //Remove the sockets from the socketMap and collect them to delete them
+        socketToClose.forEach(s -> sockets.add(socketMap.remove(s)));
 
-        synchronized (socketMap) {
-
-
-            //Remove the sockets from the socketMap and collect them to delete them
-            socketToClose.forEach(s -> sockets.add(socketMap.remove(s)));
-
-            //Close the sockets
-            for (ClientSocket socket1 : sockets) {
-                socket1.close();
-            }
+        //Close the sockets
+        for (ClientSocket socket1 : sockets) {
+            socket1.close();
         }
     }
 
@@ -235,7 +224,6 @@ public class Forwarder implements Runnable {
      * Close all the sockets and clear all the Hashmaps.
      */
     public void stop() {
-
         //Close the sockets
         socketMap.values().forEach(ClientSocket::close);
 
