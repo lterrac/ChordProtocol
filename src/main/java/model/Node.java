@@ -42,7 +42,7 @@ public class Node {
     /**
      * Atomic reference to the {@link #fingerArray}
      */
-    private final AtomicReferenceArray<NodeProperties> fingers;
+    private volatile AtomicReferenceArray<NodeProperties> fingers;
     /**
      * Lock for the properties of the current node
      */
@@ -149,6 +149,7 @@ public class Node {
             deleteBackupFolderAndRecreate();
             askPredecessorForBackupResources();
         } else {
+            System.out.println("---------------------------------------------------------YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY");
             pingPredecessor = null;
             transferBackupsToOnline();
         }
@@ -650,6 +651,7 @@ public class Node {
         //Move from backup to online
         System.out.println("save file because the predecessor is null");
         File folder = new File("./node" + this.properties.getNodeId() + "/backup");
+
         File[] allFiles = folder.listFiles();
         for (File file : allFiles) {
             saveFile(file, "online");
@@ -671,6 +673,8 @@ public class Node {
      */
     public void distributeResource(File file, boolean backup) {
         if (backup) {
+            System.out.println("---------------------------------------------------------------------------- FILE BACKUP");
+            System.out.println(sha1(file.getName()));
             saveFile(file, "backup");
         } else {
             saveFile(file, "online");
