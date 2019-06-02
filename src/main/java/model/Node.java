@@ -823,12 +823,12 @@ public class Node {
         forwarder.stop();
         nodeSocketServer.close();
         forwarder.stop();
+        pingPredecessorServer.terminate();
+        pingSuccessorServer.terminate();
+        pingSuccessor.terminate();
 
-        if (pingSuccessor != null)
-            pingSuccessor.terminate();
-
-        if (pingSuccessorServer != null)
-            pingSuccessorServer.terminate();
+        if (pingPredecessor != null)
+            pingPredecessor.terminate();
     }
 
 }
