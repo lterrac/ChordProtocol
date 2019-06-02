@@ -16,12 +16,6 @@ public class PingSuccessor extends PingClient {
     void crashHandling() {
         node.replaceSuccessor();
     }
-
-    @Override
-    protected void printMissingPackets(int missed) {
-        System.out.println("\t\t missing successor packets " + missed + "from node " + targetNodeId);
-    }
-
     @Override
     protected void printAMiss(Logger logger) {
         logger.log(Level.SEVERE, "Missing successor packet from node " + targetNodeId);

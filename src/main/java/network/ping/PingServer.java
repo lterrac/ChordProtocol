@@ -53,9 +53,6 @@ public class PingServer implements Runnable {
                 logger.log(Level.SEVERE, "Error while receiving a packet");
             }
 
-            // Print the received data.
-            //printData(request);
-
             // Send reply
             InetAddress clientHost = request.getAddress();
             int clientPort = request.getPort();
@@ -66,8 +63,6 @@ public class PingServer implements Runnable {
             } catch (IOException e) {
                 logger.log(Level.SEVERE, "Error while sending a reply");
             }
-
-          //  System.out.println("Reply sent.");
         }
         socket.close();
     }
@@ -85,39 +80,3 @@ public class PingServer implements Runnable {
         terminated.set(true);
     }
 }
-
-
-
-/*
-    // Print ping data to the standard output stream. // TODO: just for testing
-    private void printData(DatagramPacket request) {
-        // Obtain references to the packet's array of bytes.
-        byte[] buf = request.getData();
-
-        // Wrap the bytes in a byte array input stream, so that you can read the data as a stream of bytes.
-        ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-
-        // Wrap the byte array output stream in an input stream reader, so you can read the data as a stream of characters.
-        InputStreamReader isr = new InputStreamReader(bais);
-
-        // Wrap the input stream reader in a buffered reader, so you can read the character data a line at a time.
-        BufferedReader br = new BufferedReader(isr);
-
-        // The message data is contained in a single line, so read this line.
-        String line = null;
-        try {
-            line = br.readLine();
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Error while reading a packet");
-        }
-
-        // Print host address and data received from it.
-        System.out.println(
-                "Received from " +
-                        request.getAddress().getHostAddress() +
-                        ": " +
-                        line);
-    }
-
-
- */

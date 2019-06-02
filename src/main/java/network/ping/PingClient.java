@@ -36,13 +36,6 @@ public abstract class PingClient implements Runnable {
         while (!createdDatagramSocket) {
             try {
                 socket = new DatagramSocket();
-        /*        System.out.println("Datagram client is up on:");
-                System.out.println("Ip address: " + InetAddress.getLocalHost().getHostAddress());
-                System.out.println("Port: " + socket.getLocalPort());
-                System.out.println("Pinging towards: ");
-                System.out.println("Ip address: " + targetIp);
-                System.out.println("Port: " + targetPort);
-*/
                 createdDatagramSocket = true;
             } catch (SocketException e) {
                 logger.log(Level.WARNING, "Failed to open the datagram socket client. I'll retry in a second!");
@@ -136,45 +129,9 @@ public abstract class PingClient implements Runnable {
             }
         }
 
-        printMissingPackets(missed);
-
         // simple check to detect a the crash of a node
         return missed != PING_LIMIT;
     }
 
-    protected abstract void printMissingPackets(int missed);
-
     protected abstract void printAMiss(Logger logger);
 }
-
-
-    /*
-    // Print ping data to the standard output stream. // TODO: just for testing
-    private void printData(DatagramPacket request) {
-        // Obtain references to the packet's array of bytes.
-        byte[] buf = request.getData();
-
-        // Wrap the bytes in a byte array input stream, so that you can read the data as a stream of bytes.
-        ByteArrayInputStream bais = new ByteArrayInputStream(buf);
-
-        // Wrap the byte array output stream in an input stream reader, so you can read the data as a stream of characters.
-        InputStreamReader isr = new InputStreamReader(bais);
-
-        // Wrap the input stream reader in a buffered reader, so you can read the character data a line at a time.
-        BufferedReader br = new BufferedReader(isr);
-
-        // The message data is contained in a single line, so read this line.
-        String line = null;
-        try {
-            line = br.readLine();
-        } catch (IOException e) {
-            logger.log(Level.SEVERE, "Error while reading a packet");
-        }
-
-        // Print host address and data received from it.
-        System.out.println(
-                "Received from " +
-                        request.getAddress().getHostAddress() +
-                        ": " +
-                        line);
-    } */

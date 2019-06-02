@@ -4,8 +4,8 @@ import model.NodeProperties;
 
 import javax.xml.bind.DatatypeConverter;
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import static model.NodeProperties.KEY_SIZE;
 
@@ -28,7 +28,7 @@ public class Utilities {
         try {
             String sha1;
             MessageDigest msdDigest = MessageDigest.getInstance("SHA-1");
-            msdDigest.update(text.getBytes("UTF-8"), 0, text.length());
+            msdDigest.update(text.getBytes(StandardCharsets.UTF_8), 0, text.length());
             sha1 = DatatypeConverter.printHexBinary(msdDigest.digest());
             return Integer.parseInt(new BigInteger(sha1, 16)
                     .mod(BigInteger.valueOf((int) Math.pow(2, KEY_SIZE)))

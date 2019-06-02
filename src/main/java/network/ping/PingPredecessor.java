@@ -18,11 +18,6 @@ public class PingPredecessor extends PingClient {
     }
 
     @Override
-    protected void printMissingPackets(int missed) {
-        System.out.println("\t\t missing predecessor packets " + missed + "from node " + targetNodeId);
-    }
-
-    @Override
     protected void printAMiss(Logger logger) {
         logger.log(Level.SEVERE, "\t\tMissing predecessor packet from node " + targetNodeId);
     }
