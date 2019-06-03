@@ -11,6 +11,7 @@ public final class NodeProperties implements Serializable {
     static final int FIX_PERIOD = 200; // fixFingers period
     static final int CHECK_SOCKET_PERIOD = 10000; // check for unused sockets period
     static final int STABILIZE_PERIOD = 500; // stabilize period
+    static final int CHECK_RESOURCES_PERIOD = 60; // (seconds) check if you have only resources that must belong to you
 
 
     private final int nodeId;

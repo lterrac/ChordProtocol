@@ -14,8 +14,10 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -38,11 +40,6 @@ public class Node {
      * Finger table of the node
      */
     private final NodeProperties[] fingerArray;
-
-    /**
-     * Atomic reference to the {@link #fingerArray}
-     */
-    private volatile AtomicReferenceArray<NodeProperties> fingers;
     /**
      * Lock for the properties of the current node
      */
@@ -55,6 +52,10 @@ public class Node {
      * Lock for the properties of the successorsList
      */
     private final Object successorsLock;
+    /**
+     * Atomic reference to the {@link #fingerArray}
+     */
+    private volatile AtomicReferenceArray<NodeProperties> fingers;
     /**
      * Represents the "client side" of a node. It sends requests to other nodes
      */
@@ -73,11 +74,13 @@ public class Node {
     private ScheduledExecutorService fixFingersThread;
     private ScheduledExecutorService stabilizeThread;
     private ScheduledExecutorService forwarderThread;
+    private ScheduledExecutorService checkResourcesThread;
     /**
      * Classes containing the threads code
      */
     private FixFingers fixFingers;
     private Stabilize stabilize;
+    private CheckResources checkResources;
     private NodeProperties predecessor;
     /**
      * Socket server for accepting new socket connections
@@ -97,16 +100,23 @@ public class Node {
      */
     private int n_fix;
 
+    /**
+     * List of the file received after the requests made by the application layer
+     */
+    private List<File> receivedFiles;
+
     public Node() {
         fingerArray = new NodeProperties[KEY_SIZE];
         n_fix = -1;
         successors = new ConcurrentLinkedDeque<>();
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
+        checkResources = new CheckResources(this);
         nodeLock = new Object();
         fingers = new AtomicReferenceArray<>(fingerArray);
         predecessorLock = new Object();
         successorsLock = new Object();
+        receivedFiles = new ArrayList<>();
     }
 
     /*--------------------------------------
@@ -348,7 +358,6 @@ public class Node {
      *                                     *
      --------------------------------------*/
 
-
     /**
      * Creates the primary classes of the node.
      * Create : - ServerSocket to accept incoming connections
@@ -396,10 +405,12 @@ public class Node {
         fixFingersThread = Executors.newSingleThreadScheduledExecutor();
         stabilizeThread = Executors.newSingleThreadScheduledExecutor();
         forwarderThread = Executors.newSingleThreadScheduledExecutor();
+        checkResourcesThread = Executors.newSingleThreadScheduledExecutor();
 
         forwarderThread.scheduleAtFixedRate(forwarder, 1, CHECK_SOCKET_PERIOD, TimeUnit.MILLISECONDS);
         fixFingersThread.scheduleAtFixedRate(fixFingers, 200, FIX_PERIOD, TimeUnit.MILLISECONDS);
         stabilizeThread.scheduleAtFixedRate(stabilize, 400, STABILIZE_PERIOD, TimeUnit.MILLISECONDS);
+        checkResourcesThread.scheduleAtFixedRate(checkResources, 1, CHECK_RESOURCES_PERIOD, TimeUnit.SECONDS);
     }
 
 
@@ -843,5 +854,42 @@ public class Node {
 
         if (pingPredecessor != null)
             pingPredecessor.terminate();
+    }
+
+    public void printFileRequests() {
+        System.out.println("List of received files:");
+        for (File f : receivedFiles) {
+            System.out.println("File id: " + sha1(f.getName()));
+        }
+    }
+
+    public void getResource(String ip, int port, int id) {
+        forwarder.makeRequest(ip, port, new GetResourceRequest(properties,id));
+    }
+
+    public synchronized void sendResourceIfExists(NodeProperties askingNode, int fileId) {
+        File folder = new File("./node" + this.properties.getNodeId() + "/online");
+        File[] allFiles = folder.listFiles();
+
+        for (File file : allFiles) {
+            if (sha1(file.getName()) == fileId) {
+                forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getTcpServerPort(), new GetResourceReply(file));
+            }
+        }
+    }
+
+    public void addFileToRequestedFiles(File f) {
+        receivedFiles.add(f);
+    }
+
+    public synchronized void checkResources() {
+        File folder = new File("./node" + this.properties.getNodeId() + "/online");
+        File[] allFiles = folder.listFiles();
+
+        for (File file : allFiles) {
+            if(!isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())){
+                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, false));
+            }
+        }
     }
 }

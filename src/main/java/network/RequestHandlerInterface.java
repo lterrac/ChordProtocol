@@ -34,4 +34,8 @@ public interface RequestHandlerInterface {
     void handle(PredecessorReplyRequest request);
 
     void handle(NotifyRequest request);
+
+    void handle(GetResourceRequest request);
+
+    void handle(GetResourceReply reply);
 }

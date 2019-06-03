@@ -202,10 +202,13 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
      */
     @Override
     public void handle(LookupReplyRequest request) {
-        if (!request.isTransfer())
+        if (!request.isTransfer()) {
             System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId());
-        else
+            System.out.println("IP: " + request.getProperties().getIpAddress());
+            System.out.println("Port: " + request.getProperties().getTcpServerPort());
+        } else {
             node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), false));
+        }
     }
 
     /**
@@ -255,6 +258,16 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     @Override
     public void handle(NotifyRequest request) {
         node.notifySuccessor(request.getProperties());
+    }
+
+    @Override
+    public void handle(GetResourceRequest request) {
+        node.sendResourceIfExists(request.getAskingNode(), request.getFileId());
+    }
+
+    @Override
+    public void handle(GetResourceReply reply) {
+        node.addFileToRequestedFiles(reply.getF());
     }
 
 }

@@ -11,12 +11,12 @@ import static utilities.Utilities.sha1;
 
 public class App {
 
+    private static final int RESOURCES_NUMBER = 5;
     private static Node node;
     private static Scanner stringScanner = new Scanner(System.in);
     private static Scanner intScanner = new Scanner(System.in); // To avoid burning new line characters
     private static String knownIp;
     private static int knownTcpPort;
-    private static final int RESOURCES_NUMBER = 5;
     private static boolean resourcesCreated;
 
     public static void main(String[] args) {
@@ -87,6 +87,12 @@ public class App {
                 case 10: // print the backup resources
                     printResources("backup");
                     break;
+                case 11: // get file
+                    getResource();
+                    break;
+                case 12: // get the list of requests you made
+                    checkFileRequests();
+                    break;
                 case 0: // leave the network
                     System.out.println("The node has left the network!");
                     exit();
@@ -109,8 +115,26 @@ public class App {
         System.out.println("8. Publish your resources on the network;");
         System.out.println("9. Print successor list;");
         System.out.println("10. File key IDs of the backup resources;");
+        System.out.println("11. Ask for a resource;");
+        System.out.println("12. Check the list of requested resources;");
         System.out.println("0. Leave the network.");
         System.out.println("------------------------------------------\n");
+    }
+
+    private static void getResource() {
+        System.out.println("Enter IP and port (\"IP\":\"port\":\"ID\") of the node that should contain the resource (to get this information perform a lookup (6)):");
+        String input = stringScanner.nextLine();
+        String[] parts = input.split(":");
+        String ip = parts[0];
+        int port = Integer.parseInt(parts[1]);
+        int id = Integer.parseInt(parts[2]);
+        node.getResource(ip, port, id);
+        System.out.println("The request has been sent. You will receive a reply if the resource exists.");
+        System.out.println("------------------------------------------\n");
+    }
+
+    private static void checkFileRequests() {
+        node.printFileRequests();
     }
 
     private static void lookup() {
