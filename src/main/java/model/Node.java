@@ -889,6 +889,7 @@ public class Node {
         for (File file : allFiles) {
             if(!isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())){
                 forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, false));
+                file.delete();
             }
         }
     }
