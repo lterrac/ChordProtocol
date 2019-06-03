@@ -210,6 +210,19 @@ public class Node {
         return successor().equals(properties);
     }
 
+    public boolean isFingerTableFullfield() {
+        int highestFinger = 0;
+
+        for (int i = 0; i < KEY_SIZE; i++) {
+            if (fingers.get(i) != null) {
+                highestFinger = i;
+            } else
+                break;
+        }
+
+        return highestFinger == (KEY_SIZE - 1);
+    }
+
 
     /*--------------------------------------
      *                                     *
@@ -607,6 +620,7 @@ public class Node {
         }
         //common case, resources forwarded to others
         else {
+
             File folder = new File("./node" + properties.getNodeId() + "/offline");
             File[] allFiles = folder.listFiles();
             for (File file : allFiles) {
@@ -830,5 +844,4 @@ public class Node {
         if (pingPredecessor != null)
             pingPredecessor.terminate();
     }
-
 }

@@ -56,7 +56,7 @@ public class App {
                     if (resourcesCreated)
                         printResources("offline");
                     else
-                        printError();
+                        printResourcesError();
                     break;
                 case 5: // online resources contained by the node
                     printResources("online");
@@ -73,10 +73,13 @@ public class App {
                     }
                     break;
                 case 8: // publish offline resources
-                    if (resourcesCreated)
-                        node.publishResources();
-                    else
-                        printError();
+                    if (resourcesCreated) {
+                        if (node.isFingerTableFullfield())
+                            node.publishResources();
+                        else
+                            printFingerTableError();
+                    } else
+                        printResourcesError();
                     break;
                 case 9: // print successors list
                     node.printSuccessors();
@@ -153,8 +156,14 @@ public class App {
         System.out.println("------------------------------------------\n");
     }
 
-    private static void printError() {
+    private static void printResourcesError() {
         System.out.println("You need to create your own resources in order to see or publish them.");
         System.out.println("------------------------------------------\n");
     }
+
+    private static void printFingerTableError() {
+        System.out.println("The finger table is partially empty, you cannot publish the resources");
+        System.out.println("------------------------------------------\n");
+    }
+
 }
