@@ -60,12 +60,14 @@ public class App {
                     break;
                 case 5: // resources contained by the node
                     printResources("online");
-                    printResources("backup");
                     break;
                 case 6: // Look for a key
+                    printResources("backup");
+                    break;
+                case 7: // Look for a key
                     lookup();
                     break;
-                case 7: // create the resources and keep it offline
+                case 8: // create the resources and keep it offline
                     if (!resourcesCreated) {
                         createResources();
                         resourcesCreated = true;
@@ -73,7 +75,7 @@ public class App {
                         System.out.println("You already created your resources!");
                     }
                     break;
-                case 8: // publish offline resources
+                case 9: // publish offline resources
                     if (resourcesCreated) {
                         if (node.isFingerTableConvergent())
                             node.publishResources();
@@ -82,13 +84,13 @@ public class App {
                     } else
                         printResourcesError();
                     break;
-                case 9: // print successors list
+                case 10: // print successors list
                     node.printSuccessors();
                     break;
-                case 10: // get file
+                case 11: // get file
                     getResource();
                     break;
-                case 11: // get the list of requests you made
+                case 12: // get the list of requests you made
                     checkFileRequests();
                     break;
                 case 0: // leave the network
@@ -106,14 +108,15 @@ public class App {
         System.out.println("1. Own IP address, port of the server and ID");
         System.out.println("2. Own finger table");
         System.out.println("3. IP address, port of the server and ID of the successor and predecessor;");
-        System.out.println("4. File key IDs of the current node still not published;");
-        System.out.println("5. File key IDs of the current node (both online and backup);");
-        System.out.println("6. Lookup for a resource;");
-        System.out.println("7. Create your offline resources;");
-        System.out.println("8. Publish your resources on the network;");
-        System.out.println("9. Print successor list;");
-        System.out.println("10. Ask for a resource;");
-        System.out.println("11. Check the list of requested resources;");
+        System.out.println("4. File key IDs of the current node (not published);");
+        System.out.println("5. File key IDs of the current node (online);");
+        System.out.println("6. File key IDs of the current node (backup);");
+        System.out.println("7. Lookup for a resource;");
+        System.out.println("8. Create your offline resources;");
+        System.out.println("9. Publish your resources on the network;");
+        System.out.println("10. Print successor list;");
+        System.out.println("11. Ask for a resource;");
+        System.out.println("12. Check the list of requested resources;");
         System.out.println("0. Leave the network.");
         System.out.println("------------------------------------------\n");
     }
