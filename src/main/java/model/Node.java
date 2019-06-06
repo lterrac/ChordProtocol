@@ -703,7 +703,7 @@ public class Node {
         File[] allFiles = folder.listFiles();
         for (File f : allFiles) {
             if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
-                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getTcpServerPort(), new DistributeResourceRequest(f, false));
+                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getTcpServerPort(), new DistributeResourceRequest(f, false,false));
                 forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new TellSuccessorToDeleteBackupRequest(f));
                 f.delete();
             }
@@ -722,7 +722,7 @@ public class Node {
         File[] allFiles = folder.listFiles();
         for (File file : allFiles) {
             saveFile(file, "online");
-            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
+            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true,false));
             file.delete();
         }
     }
@@ -738,14 +738,22 @@ public class Node {
     /**
      * Send the files to be assigned to other nodes
      */
-    public void distributeResource(File file, boolean backup) {
+    public void distributeResource(File file, boolean backup, boolean check) {
         if (backup) {
             System.out.println("---------------------------------------------------------------------------- FILE BACKUP");
             System.out.println(sha1(file.getName()));
             saveFile(file, "backup");
         } else {
+            if(check) {
+                File folder = new File("./node" + this.properties.getNodeId() + "/backup");
+                File[] allFiles = folder.listFiles();
+                for(File f : allFiles) {
+                    if(f.getName().equals(file.getName()))
+                        f.delete();
+                }
+            }
             saveFile(file, "online");
-            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true));
+            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true, false));
         }
     }
 
@@ -760,7 +768,7 @@ public class Node {
 
         // TODO: after the switch to the Visitor pattern, send them as a list
         for (File file : allFiles) {
-            forwarder.makeRequest(properties.getIpAddress(), properties.getTcpServerPort(), new DistributeResourceRequest(file, true));
+            forwarder.makeRequest(properties.getIpAddress(), properties.getTcpServerPort(), new DistributeResourceRequest(file, true,false));
         }
     }
 
@@ -931,7 +939,7 @@ public class Node {
         for (File file : allFiles) {
             if (!isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
                 System.out.println("sending to successor " + file.getName());
-                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, false));
+                forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, false, true));
                 file.delete();
             }
         }

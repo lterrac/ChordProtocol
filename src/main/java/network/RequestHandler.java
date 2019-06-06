@@ -119,7 +119,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
      */
     @Override
     public void handle(DistributeResourceRequest request) {
-        node.distributeResource(request.getFile(), request.isBackup());
+        node.distributeResource(request.getFile(), request.isBackup(),request.isCheck());
     }
 
     /**
@@ -207,7 +207,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
             System.out.println("IP: " + request.getProperties().getIpAddress());
             System.out.println("Port: " + request.getProperties().getTcpServerPort());
         } else {
-            node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), false));
+            node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), false,false));
         }
     }
 
@@ -219,7 +219,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
     @Override
     public void handle(TransferAfterLeaveRequest request) {
         node.saveFile(request.getFile(), "online");
-        node.getForwarder().makeRequest(node.successor().getIpAddress(), node.successor().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), true));
+        node.getForwarder().makeRequest(node.successor().getIpAddress(), node.successor().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), true,false));
     }
 
     /**
