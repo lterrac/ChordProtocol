@@ -15,7 +15,6 @@ public class FixFingers implements Runnable {
 
     @Override
     public void run() {
-        System.out.println("Fix fingers");
         int fixIndex = node.nextFinger();
         int fixId = calculateFixId(node.getProperties().getNodeId(), fixIndex);
 

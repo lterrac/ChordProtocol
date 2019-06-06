@@ -315,15 +315,11 @@ public class Node {
      * @param node the successor
      */
     public void setSuccessor(NodeProperties node) {
-
-        System.out.println("set successor");
-
         fingers.set(0, node);
-
 
         if (pingSuccessor != null) {
             pingSuccessor.terminate();
-            logger.log(Level.INFO, "stopped pingSuccessor client");
+            logger.log(Level.INFO, "Stopped pingSuccessor client");
         }
 
         // restart the ping client every time the successor changes
@@ -339,22 +335,17 @@ public class Node {
      * Replace the successor after having detected that has crashed. The new successor will be the next in the successors list
      */
     public void replaceSuccessor() {
-
-        System.out.println("replace successor");
-
         fingers.set(0, successors.removeFirst());
-        System.out.println("Now successor is " + successor().getNodeId());
-
 
         //stop the old pinger if exists
         if (pingSuccessor != null) {
             pingSuccessor.terminate();
-            logger.log(Level.INFO, "stopped pingSuccessor client");
+            logger.log(Level.INFO, "Stopped pingSuccessor client");
         }
 
         //create a new one only if I am not the last node left in the network
         if (successor().getNodeId() != properties.getNodeId()) {
-            logger.log(Level.INFO, "A node crashed. I'm building another pingSuccessor client for successor " + successor().getNodeId());
+            logger.log(Level.INFO, "I'm building another pingSuccessor client for successor " + successor().getNodeId());
             NodeProperties successor = successor();
             pingSuccessor = new PingSuccessor(this, successor.getIpAddress(), successor.getUdpSuccessorServerPort(), successor.getNodeId());
             new Thread(pingSuccessor).start();
@@ -497,7 +488,6 @@ public class Node {
      */
     public void notifySuccessor(NodeProperties predecessor) {
         if ((this.predecessor == null || predecessor.isInIntervalStrict(this.predecessor.getNodeId(), properties.getNodeId()))) {
-            System.out.println("notify predecessor " + predecessor.getNodeId());
             setPredecessor(predecessor);
         }
     }
@@ -508,10 +498,9 @@ public class Node {
      * @param askingNode is the node that asked for findings its successor
      */
     public void findSuccessor(NodeProperties askingNode) {
-        System.out.println("findSuccessor" + successor().getNodeId());
         // check if there are two nodes with the same Id
         if (askingNode.getNodeId() == properties.getNodeId())
-            logger.log(Level.SEVERE, "inconsistency: two nodes with the same ID");
+            logger.log(Level.SEVERE, "Inconsistency: two nodes with the same ID");
 
         if (askingNode.isInInterval(properties.getNodeId(), successor().getNodeId())) {
             forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getTcpServerPort(), new FindSuccessorReplyRequest(successor()));
@@ -536,7 +525,6 @@ public class Node {
      * @param fixIndex   is the index of the finger table to be updated
      */
     public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
-        System.out.println("fixFingerSuccessor" + successor().getNodeId());
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
             forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getTcpServerPort(), new FixFingerReplyRequest(successor(), fixId, fixIndex));
         } else {
@@ -732,7 +720,6 @@ public class Node {
      * The current node asks the predecessor for its online resources to put them in its backup folder
      */
     public void askPredecessorForBackupResources() {
-        System.out.println("ask to predecessor " + sha1(predecessor.getIpAddress() + ":" + predecessor.getTcpServerPort()) + "for backup resources");
         forwarder.makeRequest(predecessor.getIpAddress(), predecessor.getTcpServerPort(), new AskPredecessorBackupResourcesRequest(properties));
     }
 
@@ -937,7 +924,6 @@ public class Node {
 
         for (File file : allFiles) {
             if (!isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
-                System.out.println("sending to successor " + file.getName());
                 forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, false, true));
                 file.delete();
             }

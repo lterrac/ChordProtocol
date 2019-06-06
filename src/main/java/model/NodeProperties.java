@@ -8,9 +8,9 @@ import java.io.Serializable;
 public final class NodeProperties implements Serializable {
 
     public static final int KEY_SIZE = 8; // size of the keys
-    static final int FIX_PERIOD = 500; // fixFingers period
+    static final int FIX_PERIOD = 1000; // fixFingers period
     static final int CHECK_SOCKET_PERIOD = 10000; // check for unused sockets period
-    static final int STABILIZE_PERIOD = 500; // stabilize period
+    static final int STABILIZE_PERIOD = 1000; // stabilize period
     static final int CHECK_RESOURCES_PERIOD = 20; // (seconds) check if you have only resources that must belong to you
 
 
