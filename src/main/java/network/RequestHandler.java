@@ -206,6 +206,7 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
             System.out.println("The resource " + request.getKey() + " is contained by node " + request.getProperties().getNodeId());
             System.out.println("IP: " + request.getProperties().getIpAddress());
             System.out.println("Port: " + request.getProperties().getTcpServerPort());
+            System.out.println("Coordinates: " + request.getProperties().getIpAddress() + ":" + request.getProperties().getTcpServerPort() );
         } else {
             node.getForwarder().makeRequest(request.getProperties().getIpAddress(), request.getProperties().getTcpServerPort(), new DistributeResourceRequest(request.getFile(), false,false));
         }
@@ -234,7 +235,6 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
         String receiverIp = request.getProperties().getIpAddress();
         int receiverPort = request.getProperties().getTcpServerPort();
 
-        //TODO Check if it is the right behaviour
         node.getForwarder().makeRequest(receiverIp, receiverPort, new PredecessorReplyRequest(node.getPredecessor(), node.getCustomizedSuccessors()));
     }
 
@@ -244,7 +244,6 @@ public class RequestHandler extends Thread implements RequestHandlerInterface {
      * @param request is the handled request
      */
 
-    //todo Check if a synchronized block is necessary
     @Override
     public void handle(PredecessorReplyRequest request) {
         node.finalizeStabilize(request.getProperties(), request.getSuccessors());

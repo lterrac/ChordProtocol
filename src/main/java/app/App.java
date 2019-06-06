@@ -126,7 +126,7 @@ public class App {
         int port = Integer.parseInt(parts[1]);
         int id = Integer.parseInt(parts[2]);
         node.getResource(ip, port, id);
-        System.out.println("The request has been sent. You will receive a reply if the resource exists.");
+        System.out.println("The request has been sent. Check (11) in few seconds if you received the resource.");
         System.out.println("------------------------------------------\n");
     }
 

@@ -164,7 +164,6 @@ public class Node {
             deleteBackupFolderAndRecreate();
             askPredecessorForBackupResources();
         } else {
-            System.out.println("---------------------------------------------------------YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY");
             pingPredecessor = null;
             transferBackupsToOnline();
         }
@@ -509,6 +508,7 @@ public class Node {
      * @param askingNode is the node that asked for findings its successor
      */
     public void findSuccessor(NodeProperties askingNode) {
+        System.out.println("findSuccessor" + successor().getNodeId());
         // check if there are two nodes with the same Id
         if (askingNode.getNodeId() == properties.getNodeId())
             logger.log(Level.SEVERE, "inconsistency: two nodes with the same ID");
@@ -536,6 +536,7 @@ public class Node {
      * @param fixIndex   is the index of the finger table to be updated
      */
     public void fixFingerSuccessor(NodeProperties askingNode, int fixId, int fixIndex) {
+        System.out.println("fixFingerSuccessor" + successor().getNodeId());
         if (NodeProperties.isInIntervalInteger(properties.getNodeId(), fixId, successor().getNodeId())) {
             forwarder.makeRequest(askingNode.getIpAddress(), askingNode.getTcpServerPort(), new FixFingerReplyRequest(successor(), fixId, fixIndex));
         } else {
@@ -703,7 +704,7 @@ public class Node {
         File[] allFiles = folder.listFiles();
         for (File f : allFiles) {
             if (checkResourcesForPredecessor(sha1(f.getName()), nodeProperties.getNodeId(), properties.getNodeId())) {
-                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getTcpServerPort(), new DistributeResourceRequest(f, false,false));
+                forwarder.makeRequest(nodeProperties.getIpAddress(), nodeProperties.getTcpServerPort(), new DistributeResourceRequest(f, false, false));
                 forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new TellSuccessorToDeleteBackupRequest(f));
                 f.delete();
             }
@@ -722,7 +723,7 @@ public class Node {
         File[] allFiles = folder.listFiles();
         for (File file : allFiles) {
             saveFile(file, "online");
-            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true,false));
+            forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, true, false));
             file.delete();
         }
     }
@@ -744,11 +745,11 @@ public class Node {
             System.out.println(sha1(file.getName()));
             saveFile(file, "backup");
         } else {
-            if(check) {
+            if (check) {
                 File folder = new File("./node" + this.properties.getNodeId() + "/backup");
                 File[] allFiles = folder.listFiles();
-                for(File f : allFiles) {
-                    if(f.getName().equals(file.getName()))
+                for (File f : allFiles) {
+                    if (f.getName().equals(file.getName()))
                         f.delete();
                 }
             }
@@ -766,9 +767,8 @@ public class Node {
         File folder = new File("./node" + this.properties.getNodeId() + "/online");
         File[] allFiles = folder.listFiles();
 
-        // TODO: after the switch to the Visitor pattern, send them as a list
         for (File file : allFiles) {
-            forwarder.makeRequest(properties.getIpAddress(), properties.getTcpServerPort(), new DistributeResourceRequest(file, true,false));
+            forwarder.makeRequest(properties.getIpAddress(), properties.getTcpServerPort(), new DistributeResourceRequest(file, true, false));
         }
     }
 
@@ -781,7 +781,6 @@ public class Node {
         File folder = new File("./node" + this.properties.getNodeId() + "/backup");
         File[] allFiles = folder.listFiles();
 
-        // TODO: after the switch to the Visitor pattern, send them as a list
         for (File file : allFiles) {
             if (f.getName().equals(file.getName()))
                 file.delete();
