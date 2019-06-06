@@ -58,8 +58,9 @@ public class App {
                     else
                         printResourcesError();
                     break;
-                case 5: // online resources contained by the node
+                case 5: // resources contained by the node
                     printResources("online");
+                    printResources("backup");
                     break;
                 case 6: // Look for a key
                     lookup();
@@ -84,13 +85,10 @@ public class App {
                 case 9: // print successors list
                     node.printSuccessors();
                     break;
-                case 10: // print the backup resources
-                    printResources("backup");
-                    break;
-                case 11: // get file
+                case 10: // get file
                     getResource();
                     break;
-                case 12: // get the list of requests you made
+                case 11: // get the list of requests you made
                     checkFileRequests();
                     break;
                 case 0: // leave the network
@@ -109,14 +107,13 @@ public class App {
         System.out.println("2. Own finger table");
         System.out.println("3. IP address, port of the server and ID of the successor and predecessor;");
         System.out.println("4. File key IDs of the current node still not published;");
-        System.out.println("5. File key IDs of the current node;");
+        System.out.println("5. File key IDs of the current node (both online and backup);");
         System.out.println("6. Lookup for a resource;");
         System.out.println("7. Create your offline resources;");
         System.out.println("8. Publish your resources on the network;");
         System.out.println("9. Print successor list;");
-        System.out.println("10. File key IDs of the backup resources;");
-        System.out.println("11. Ask for a resource;");
-        System.out.println("12. Check the list of requested resources;");
+        System.out.println("10. Ask for a resource;");
+        System.out.println("11. Check the list of requested resources;");
         System.out.println("0. Leave the network.");
         System.out.println("------------------------------------------\n");
     }
