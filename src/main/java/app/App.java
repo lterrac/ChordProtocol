@@ -74,7 +74,7 @@ public class App {
                     break;
                 case 8: // publish offline resources
                     if (resourcesCreated) {
-                        if (node.isFingerTableFullfield())
+                        if (node.isFingerTableConvergent())
                             node.publishResources();
                         else
                             printFingerTableError();
@@ -186,7 +186,7 @@ public class App {
     }
 
     private static void printFingerTableError() {
-        System.out.println("The finger table is partially empty, you cannot publish the resources");
+        System.out.println("The finger table is not convergent, you cannot publish the resources");
         System.out.println("------------------------------------------\n");
     }
 

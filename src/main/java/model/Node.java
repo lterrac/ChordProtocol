@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
@@ -37,10 +39,6 @@ public class Node {
     private static final Logger logger = Logger.getLogger(Node.class.getName());
 
     /**
-     * Finger table of the node
-     */
-    private final NodeProperties[] fingerArray;
-    /**
      * Lock for the properties of the current node
      */
     private final Object nodeLock;
@@ -53,9 +51,14 @@ public class Node {
      */
     private final Object successorsLock;
     /**
-     * Atomic reference to the {@link #fingerArray}
+     * Atomic reference to the array of fingers.
      */
     private volatile AtomicReferenceArray<NodeProperties> fingers;
+    /**
+     * Counts the number of fingers changed during an iteration of FixFingers
+     */
+    private int changedFingers;
+    private Instant start;
     /**
      * Represents the "client side" of a node. It sends requests to other nodes
      */
@@ -104,19 +107,21 @@ public class Node {
      * List of the file received after the requests made by the application layer
      */
     private List<File> receivedFiles;
+    private boolean startedConvergence;
+    private boolean convergent;
 
     public Node() {
-        fingerArray = new NodeProperties[KEY_SIZE];
         n_fix = -1;
         successors = new ConcurrentLinkedDeque<>();
         fixFingers = new FixFingers(this);
         stabilize = new Stabilize(this);
         checkResources = new CheckResources(this);
         nodeLock = new Object();
-        fingers = new AtomicReferenceArray<>(fingerArray);
+        fingers = new AtomicReferenceArray<>(KEY_SIZE);
         predecessorLock = new Object();
         successorsLock = new Object();
         receivedFiles = new ArrayList<>();
+        changedFingers = 0;
     }
 
     /*--------------------------------------
@@ -220,7 +225,7 @@ public class Node {
         return successor().equals(properties);
     }
 
-    public boolean isFingerTableFullfield() {
+    public boolean isFingerTableFullfilled() {
         int highestFinger = 0;
 
         for (int i = 0; i < KEY_SIZE; i++) {
@@ -231,6 +236,10 @@ public class Node {
         }
 
         return highestFinger == (KEY_SIZE - 1);
+    }
+
+    public boolean isFingerTableConvergent() {
+        return convergent;
     }
 
 
@@ -256,8 +265,41 @@ public class Node {
      * @param newNode is the new value for the row with index i in the table
      */
     public void updateFinger(int i, NodeProperties newNode) {
-        fingers.set(i, newNode);
+
+        if (!newNode.equals(fingers.get(i))) {
+            fingers.set(i, newNode);
+
+            if (changedFingers == 0) {
+                start = Instant.now();
+                startedConvergence = true;
+                convergent = false;
+            }
+
+            changedFingers++;
+        }
+
+        if (startedConvergence && isFingerTableFullfilled() && i == (KEY_SIZE - 1)) {
+            if (!checkFingerTableConvergence()) {
+                Instant end = Instant.now();
+                Duration timeElapsed = Duration.between(start, end);
+                System.out.println("Time taken for convergence: " + timeElapsed.toMillis() + " milliseconds and " + changedFingers + " steps");
+                start = null;
+                changedFingers = 0;
+                startedConvergence = false;
+
+                convergent = true;
+            }
+        }
     }
+
+    /**
+     * Compares the finger table with the previous version and checks for difference.
+     * If there are no more the finger table is convergent
+     */
+    private boolean checkFingerTableConvergence() {
+        return startedConvergence && (changedFingers == 0);
+    }
+
 
     /**
      * Updates the successor list of the current node
@@ -864,7 +906,7 @@ public class Node {
     }
 
     public void getResource(String ip, int port, int id) {
-        forwarder.makeRequest(ip, port, new GetResourceRequest(properties,id));
+        forwarder.makeRequest(ip, port, new GetResourceRequest(properties, id));
     }
 
     public synchronized void sendResourceIfExists(NodeProperties askingNode, int fileId) {
@@ -887,7 +929,8 @@ public class Node {
         File[] allFiles = folder.listFiles();
 
         for (File file : allFiles) {
-            if(!isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())){
+            if (!isInIntervalInteger(predecessor.getNodeId(), sha1(file.getName()), properties.getNodeId())) {
+                System.out.println("sending to successor " + file.getName());
                 forwarder.makeRequest(successor().getIpAddress(), successor().getTcpServerPort(), new DistributeResourceRequest(file, false));
                 file.delete();
             }

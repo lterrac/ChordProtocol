@@ -113,9 +113,11 @@ public final class NodeProperties implements Serializable {
         if (obj instanceof NodeProperties) {
             NodeProperties node = (NodeProperties) obj;
             boolean id = nodeId == node.getNodeId();
-            boolean port = getTcpServerPort() == node.getTcpServerPort();
+            boolean tcpPort = getTcpServerPort() == node.getTcpServerPort();
             boolean ip = getIpAddress().equals(node.getIpAddress());
-            return id && port && ip;
+            boolean udpSuccessorPort = udpSuccessorServerPort == node.getUdpSuccessorServerPort();
+            boolean udpPredecessorPort = udpPredecessorServerPort == node.getUdpPredecessorServerPort();
+            return id && tcpPort && ip && udpSuccessorPort && udpPredecessorPort;
         } else return false;
     }
 }
